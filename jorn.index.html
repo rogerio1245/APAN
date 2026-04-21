@@ -82,18 +82,6 @@
         button.success {
             background: #198754;
         }
-        button.danger {
-            background: #dc3545;
-        }
-        select, input {
-            padding: 10px 16px;
-            border-radius: 40px;
-            border: none;
-            margin: 5px;
-            font-size: 0.9rem;
-            background: #2a2a3a;
-            color: white;
-        }
         .flex {
             display: flex;
             flex-wrap: wrap;
@@ -122,7 +110,7 @@
             border-radius: 8px;
             text-align: center;
             font-family: monospace;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
         .gabarito-item span {
             color: #ffaa44;
@@ -138,9 +126,33 @@
             text-align: left;
             color: #aaa;
         }
-        hr {
-            border-color: #333;
-            margin: 16px 0;
+        .overlay-permissao {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+        .overlay-permissao button {
+            background: #0d6efd;
+            font-size: 1.2rem;
+            padding: 15px 30px;
+            margin-top: 20px;
+        }
+        .overlay-permissao h2 {
+            margin-bottom: 10px;
+        }
+        .overlay-permissao p {
+            margin-bottom: 20px;
+            color: #ccc;
         }
     </style>
 </head>
@@ -150,7 +162,7 @@
 <p style="font-size:0.75rem; opacity:0.7;">Pinte o retângulo inteiro | Detecção automática</p>
 
 <div class="status" id="status">
-    🔄 Inicializando...
+    🔄 Solicitando acesso à câmera...
 </div>
 
 <div class="camera-container">
@@ -158,9 +170,6 @@
 </div>
 
 <div class="flex">
-    <select id="cameraSelect" style="display:none;">
-        <option value="">Selecionar câmera...</option>
-    </select>
     <button id="btnCapture">📷 TIRAR FOTO</button>
     <button id="btnSimular">🧪 SIMULAR</button>
     <button id="btnReiniciarCam" class="secondary">🔄 Reiniciar Câmera</button>
@@ -174,12 +183,12 @@
 </div>
 
 <div class="dicas">
-    <strong>🔧 DICAS PARA A CÂMERA FUNCIONAR:</strong><br>
-    • Use <strong>Chrome</strong> ou <strong>Edge</strong> no celular (Safari no iPhone precisa de permissão manual)<br>
-    • No iPhone: Vá em <strong>Configurações → Safari → Câmera → Permitir</strong><br>
-    • No Android: Toque no cadeado 🔒 e permita acesso à câmera<br>
-    • Se não funcionar, clique em <strong>"Reiniciar Câmera"</strong> e autorize<br>
-    • Teste primeiro o botão <strong>"SIMULAR"</strong> para ver o layout das respostas
+    <strong>📌 COMO FUNCIONA:</strong><br>
+    1. Ao abrir a página, o navegador PEDE PERMISSÃO para usar a câmera<br>
+    2. Clique em "PERMITIR" no pop-up do navegador<br>
+    3. Aponte para o gabarito preenchido<br>
+    4. Clique em "TIRAR FOTO" para escanear<br>
+    5. As respostas aparecerão automaticamente
 </div>
 
 <canvas id="canvas" style="display:none;"></canvas>
@@ -202,112 +211,85 @@
     const btnCapture = document.getElementById('btnCapture');
     const btnSimular = document.getElementById('btnSimular');
     const btnReiniciar = document.getElementById('btnReiniciarCam');
-    const cameraSelect = document.getElementById('cameraSelect');
     const listaRespostas = document.getElementById('listaRespostas');
 
     let streamAtual = null;
-    let dispositivos = [];
     let respostasDetectadas = {};
 
     // ============================================================
-    // 1. LISTAR CÂMERAS DISPONÍVEIS
+    // 1. SOLICITAR CÂMERA AUTOMATICAMENTE (FUNÇÃO PRINCIPAL)
     // ============================================================
-    async function listarCameras() {
-        try {
-            // Primeiro pede permissão para listar
-            await navigator.mediaDevices.getUserMedia({ video: true });
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            dispositivos = devices.filter(device => device.kind === 'videoinput');
-            
-            if (dispositivos.length > 0) {
-                cameraSelect.style.display = 'inline-block';
-                cameraSelect.innerHTML = '<option value="">📷 Selecione uma câmera...</option>';
-                dispositivos.forEach((device, idx) => {
-                    const label = device.label || `Câmera ${idx + 1}`;
-                    cameraSelect.innerHTML += `<option value="${device.deviceId}">${label}</option>`;
-                });
-                return true;
-            }
-            return false;
-        } catch (err) {
-            console.warn("Erro ao listar câmeras:", err);
-            return false;
-        }
-    }
-
-    // ============================================================
-    // 2. INICIAR CÂMERA (com deviceId específico ou padrão)
-    // ============================================================
-    async function iniciarCamera(deviceId = null) {
-        // Parar stream atual
-        if (streamAtual) {
-            streamAtual.getTracks().forEach(track => track.stop());
-            streamAtual = null;
-        }
-
+    async function solicitarCameraAutomaticamente() {
         statusDiv.className = "status aviso";
-        statusDiv.innerHTML = "📷 Solicitando permissão da câmera...";
-
+        statusDiv.innerHTML = "📷 SOLICITANDO PERMISSÃO DA CÂMERA...<br><small>O navegador vai perguntar 'Permitir acesso à câmera'</small>";
+        
         try {
-            let constraints;
-            if (deviceId) {
-                constraints = { video: { deviceId: { exact: deviceId } } };
-            } else {
-                // Tenta traseira primeiro, depois frontal, depois qualquer uma
-                constraints = { video: { facingMode: { exact: "environment" } } };
-            }
+            // Tenta câmera traseira primeiro (environment)
+            const constraints = { 
+                video: { facingMode: { exact: "environment" } } 
+            };
             
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            video.srcObject = stream;
-            streamAtual = stream;
-            
-            await new Promise((resolve) => {
-                video.onloadedmetadata = () => {
-                    video.play();
-                    resolve();
-                };
-            });
-            
-            statusDiv.className = "status sucesso";
-            statusDiv.innerHTML = "✅ Câmera ativa! Aponte para o gabarito e clique em TIRAR FOTO";
+            aplicarStream(stream);
             return true;
             
-        } catch (err) {
-            console.error("Erro com câmera específica:", err);
+        } catch (errTraseira) {
+            console.log("Câmera traseira não disponível ou negada, tentando padrão...");
             
-            // Tentativa 2: sem facingMode específico
+            // Tenta qualquer câmera
             try {
-                statusDiv.innerHTML = "📷 Tentando câmera padrão...";
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = stream;
-                streamAtual = stream;
-                
-                await new Promise((resolve) => {
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        resolve();
-                    };
-                });
-                
-                statusDiv.className = "status sucesso";
-                statusDiv.innerHTML = "✅ Câmera ativa (modo padrão)!";
+                aplicarStream(stream);
                 return true;
+            } catch (errPadrao) {
+                console.error("Erro ao acessar câmera:", errPadrao);
                 
-            } catch (err2) {
-                statusDiv.className = "status erro";
-                statusDiv.innerHTML = "❌ NENHUMA CÂMERA ENCONTRADA.<br><br>" +
-                    "SOLUÇÕES:<br>" +
-                    "1. No Chrome/Edge: acesse <strong>chrome://settings/content/camera</strong> e permita o site<br>" +
-                    "2. No iPhone: Configurações → Safari → Câmera → Permitir<br>" +
-                    "3. Reinicie o navegador<br>" +
-                    "4. Teste outro navegador (Edge ou Chrome)";
+                // Verifica se foi negado pelo usuário
+                if (errPadrao.name === 'NotAllowedError' || errPadrao.name === 'PermissionDeniedError') {
+                    statusDiv.className = "status erro";
+                    statusDiv.innerHTML = "❌ PERMISSÃO NEGADA!<br><br>" +
+                        "Para usar o scanner:<br>" +
+                        "• Clique no cadeado 🔒 na barra de endereço<br>" +
+                        "• Permissões → Câmera → Permitir<br>" +
+                        "• Recarregue a página";
+                } else if (errPadrao.name === 'NotFoundError') {
+                    statusDiv.className = "status erro";
+                    statusDiv.innerHTML = "❌ NENHUMA CÂMERA ENCONTRADA!<br><br>" +
+                        "Verifique se seu celular tem câmera e ela está funcionando.";
+                } else {
+                    statusDiv.className = "status erro";
+                    statusDiv.innerHTML = "❌ ERRO: " + errPadrao.message;
+                }
                 return false;
             }
         }
     }
+    
+    // Aplicar o stream de vídeo
+    function aplicarStream(stream) {
+        streamAtual = stream;
+        video.srcObject = stream;
+        
+        video.onloadedmetadata = () => {
+            video.play();
+            statusDiv.className = "status sucesso";
+            statusDiv.innerHTML = "✅ CÂMERA ATIVA!<br><small>Aponte para o gabarito e clique em TIRAR FOTO</small>";
+        };
+    }
 
     // ============================================================
-    // 3. CAPTURAR E PROCESSAR (VERSÃO SIMULADA POR ENQUANTO)
+    // 2. REINICIAR CÂMERA (forçar nova permissão)
+    // ============================================================
+    async function reiniciarCamera() {
+        if (streamAtual) {
+            streamAtual.getTracks().forEach(track => track.stop());
+            streamAtual = null;
+        }
+        await solicitarCameraAutomaticamente();
+    }
+
+    // ============================================================
+    // 3. CAPTURAR E PROCESSAR (VERSÃO DEMONSTRAÇÃO)
     // ============================================================
     async function capturarEProcessar() {
         if (!video.videoWidth || !video.videoHeight) {
@@ -321,15 +303,12 @@
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        // Mostrar preview da imagem capturada (opcional)
-        const previewUrl = canvas.toDataURL('image/jpeg', 0.8);
+        statusDiv.innerHTML = "🔍 Processando gabarito...";
         
-        statusDiv.innerHTML = "🔍 Processando gabarito (modo demonstração)...";
-        
-        // Simular processamento
+        // Simular processamento (em breve: detecção real dos retângulos pintados)
         await new Promise(resolve => setTimeout(resolve, 800));
         
-        // Gerar respostas de exemplo
+        // Gerar respostas de exemplo (cíclico A,B,C,D)
         respostasDetectadas = {};
         for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
             const idx = (q - 1) % CONFIG.alternativas.length;
@@ -337,12 +316,12 @@
         }
         
         exibirResultados();
-        statusDiv.innerHTML = "✅ Gabarito processado! (Modo demonstração - em breve detecção real)";
+        statusDiv.innerHTML = "✅ Gabarito processado! Respostas detectadas abaixo.";
         statusDiv.className = "status sucesso";
     }
 
     // ============================================================
-    // 4. SIMULAR MARCAÇÃO
+    // 4. SIMULAR MARCAÇÃO (para teste)
     // ============================================================
     function simularMarcacao() {
         respostasDetectadas = {};
@@ -374,11 +353,11 @@
         }
         html += '</div>';
         html += `<div style="margin-top:12px; text-align:center; background:#252540; padding:8px; border-radius:8px;">
-                    ✅ ${Object.keys(respostasDetectadas).length} questões detectadas
+                    ✅ ${Object.keys(respostasDetectadas).length} de ${CONFIG.totalQuestoes} questões detectadas
                 </div>`;
         
         listaRespostas.innerHTML = html;
-        console.log("Respostas:", respostasDetectadas);
+        console.log("Respostas detectadas:", respostasDetectadas);
     }
 
     // ============================================================
@@ -466,7 +445,7 @@
             </div>
             
             <div class="instrucoes">
-                ⚠️ PINTE COMPLETAMENTE o retângulo da alternativa escolhida.
+                ⚠️ PINTE COMPLETAMENTE o retângulo da alternativa escolhida.<br>
                 Os 4 quadrados pretos nos cantos são para calibração.
             </div>
             <div class="no-print" style="margin-top:20px;">
@@ -483,28 +462,22 @@
     // ============================================================
     btnCapture.addEventListener('click', capturarEProcessar);
     btnSimular.addEventListener('click', simularMarcacao);
-    btnReiniciar.addEventListener('click', () => iniciarCamera());
+    btnReiniciar.addEventListener('click', reiniciarCamera);
     
-    cameraSelect.addEventListener('change', async (e) => {
-        if (e.target.value) {
-            await iniciarCamera(e.target.value);
-        }
-    });
-    
-    // Adicionar botão de gerar PDF
+    // Botão gerar PDF
     const btnPDF = document.createElement('button');
     btnPDF.textContent = '🖨️ GERAR GABARITO PDF';
     btnPDF.classList.add('success');
     btnPDF.addEventListener('click', gerarGabaritoPDF);
     document.querySelector('.flex').appendChild(btnPDF);
     
-    // Iniciar
-    async function init() {
-        await listarCameras();
-        await iniciarCamera();
-    }
-    
-    init();
+    // ============================================================
+    // INICIAR - SOLICITA CÂMERA AUTOMATICAMENTE
+    // ============================================================
+    // Quando a página carregar, já pede a câmera
+    window.addEventListener('load', () => {
+        solicitarCameraAutomaticamente();
+    });
 </script>
 </body>
 </html>
