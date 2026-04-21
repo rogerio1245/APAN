@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <title>Scanner de Gabarito</title>
     <style>
         * {
@@ -15,6 +20,7 @@
             margin: 0;
             padding: 16px;
             text-align: center;
+            min-height: 100vh;
         }
         h1 {
             font-size: 1.3rem;
@@ -29,15 +35,15 @@
             font-family: monospace;
             word-break: break-word;
         }
-        .status.erro {
-            background: #4a1515;
-            color: #ff8888;
-            border-left: 4px solid #ff4444;
-        }
         .status.sucesso {
             background: #154a15;
             color: #88ff88;
             border-left: 4px solid #44ff44;
+        }
+        .status.erro {
+            background: #4a1515;
+            color: #ff8888;
+            border-left: 4px solid #ff4444;
         }
         .status.aviso {
             background: #4a4a15;
@@ -126,33 +132,29 @@
             text-align: left;
             color: #aaa;
         }
-        .overlay-permissao {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.95);
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 20px;
+        .instrucao {
+            background: #0d6efd20;
+            border-radius: 12px;
+            padding: 12px;
+            margin: 12px 0;
+            text-align: left;
+            font-size: 0.8rem;
         }
-        .overlay-permissao button {
-            background: #0d6efd;
-            font-size: 1.2rem;
-            padding: 15px 30px;
-            margin-top: 20px;
+        .btn-instalar {
+            background: #e94560;
+            font-size: 0.9rem;
+            padding: 10px 20px;
         }
-        .overlay-permissao h2 {
-            margin-bottom: 10px;
+        hr {
+            border-color: #333;
+            margin: 16px 0;
         }
-        .overlay-permissao p {
-            margin-bottom: 20px;
-            color: #ccc;
+        .instalado-msg {
+            background: #19875440;
+            border-radius: 12px;
+            padding: 8px;
+            font-size: 0.7rem;
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -160,6 +162,11 @@
 
 <h1>📸 Scanner de Gabarito</h1>
 <p style="font-size:0.75rem; opacity:0.7;">Pinte o retângulo inteiro | Detecção automática</p>
+
+<div id="installBanner" style="display:none;">
+    <button id="btnInstalar" class="btn-instalar">📲 INSTALAR APP (RECOMENDADO)</button>
+    <div class="instalado-msg" id="instaladoMsg"></div>
+</div>
 
 <div class="status" id="status">
     🔄 Solicitando acesso à câmera...
@@ -175,6 +182,14 @@
     <button id="btnReiniciarCam" class="secondary">🔄 Reiniciar Câmera</button>
 </div>
 
+<div class="instrucao">
+    <strong>📌 COMO USAR:</strong><br>
+    1. Permita o acesso à câmera quando o app pedir (só na primeira vez)<br>
+    2. Aponte para o gabarito preenchido<br>
+    3. Clique em "TIRAR FOTO"<br>
+    4. As respostas aparecerão automaticamente
+</div>
+
 <div class="resultados" id="resultados">
     <strong>📋 RESPOSTAS DETECTADAS:</strong>
     <div id="listaRespostas" style="margin-top: 10px;">
@@ -183,12 +198,10 @@
 </div>
 
 <div class="dicas">
-    <strong>📌 COMO FUNCIONA:</strong><br>
-    1. Ao abrir a página, o navegador PEDE PERMISSÃO para usar a câmera<br>
-    2. Clique em "PERMITIR" no pop-up do navegador<br>
-    3. Aponte para o gabarito preenchido<br>
-    4. Clique em "TIRAR FOTO" para escanear<br>
-    5. As respostas aparecerão automaticamente
+    <strong>💡 DICAS:</strong><br>
+    • Use boa iluminação<br>
+    • Mantenha o celular paralelo ao papel<br>
+    • O app funciona OFFLINE após instalado
 </div>
 
 <canvas id="canvas" style="display:none;"></canvas>
@@ -212,60 +225,78 @@
     const btnSimular = document.getElementById('btnSimular');
     const btnReiniciar = document.getElementById('btnReiniciarCam');
     const listaRespostas = document.getElementById('listaRespostas');
+    const installBanner = document.getElementById('installBanner');
+    const btnInstalar = document.getElementById('btnInstalar');
+    const instaladoMsg = document.getElementById('instaladoMsg');
 
     let streamAtual = null;
     let respostasDetectadas = {};
 
     // ============================================================
-    // 1. SOLICITAR CÂMERA AUTOMATICAMENTE (FUNÇÃO PRINCIPAL)
+    // 1. PWA - DETECTAR SE JÁ ESTÁ INSTALADO
     // ============================================================
-    async function solicitarCameraAutomaticamente() {
+    function verificarModoApp() {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                            window.navigator.standalone === true;
+        
+        if (isStandalone) {
+            installBanner.style.display = 'none';
+            instaladoMsg.innerHTML = '✅ App instalado! Funcionamento completo.';
+        } else {
+            installBanner.style.display = 'block';
+            instaladoMsg.innerHTML = '⭐ Clique em "INSTALAR APP" para usar como aplicativo nativo, sem precisar de navegador.';
+        }
+    }
+
+    // ============================================================
+    // 2. PWA - INSTALAÇÃO
+    // ============================================================
+    let deferredPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBanner.style.display = 'block';
+    });
+
+    btnInstalar.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                instaladoMsg.innerHTML = '✅ App instalado! Agora você pode abrir pelo ícone na tela inicial.';
+                installBanner.style.display = 'none';
+            }
+            deferredPrompt = null;
+        }
+    });
+
+    // ============================================================
+    // 3. SOLICITAR CÂMERA AUTOMATICAMENTE
+    // ============================================================
+    async function solicitarCamera() {
         statusDiv.className = "status aviso";
-        statusDiv.innerHTML = "📷 SOLICITANDO PERMISSÃO DA CÂMERA...<br><small>O navegador vai perguntar 'Permitir acesso à câmera'</small>";
+        statusDiv.innerHTML = "📷 SOLICITANDO PERMISSÃO DA CÂMERA...";
         
         try {
-            // Tenta câmera traseira primeiro (environment)
-            const constraints = { 
+            const stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: { exact: "environment" } } 
-            };
-            
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            });
             aplicarStream(stream);
             return true;
-            
-        } catch (errTraseira) {
-            console.log("Câmera traseira não disponível ou negada, tentando padrão...");
-            
-            // Tenta qualquer câmera
+        } catch (err) {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 aplicarStream(stream);
                 return true;
-            } catch (errPadrao) {
-                console.error("Erro ao acessar câmera:", errPadrao);
-                
-                // Verifica se foi negado pelo usuário
-                if (errPadrao.name === 'NotAllowedError' || errPadrao.name === 'PermissionDeniedError') {
-                    statusDiv.className = "status erro";
-                    statusDiv.innerHTML = "❌ PERMISSÃO NEGADA!<br><br>" +
-                        "Para usar o scanner:<br>" +
-                        "• Clique no cadeado 🔒 na barra de endereço<br>" +
-                        "• Permissões → Câmera → Permitir<br>" +
-                        "• Recarregue a página";
-                } else if (errPadrao.name === 'NotFoundError') {
-                    statusDiv.className = "status erro";
-                    statusDiv.innerHTML = "❌ NENHUMA CÂMERA ENCONTRADA!<br><br>" +
-                        "Verifique se seu celular tem câmera e ela está funcionando.";
-                } else {
-                    statusDiv.className = "status erro";
-                    statusDiv.innerHTML = "❌ ERRO: " + errPadrao.message;
-                }
+            } catch (err2) {
+                statusDiv.className = "status erro";
+                statusDiv.innerHTML = "❌ Permissão negada. No app instalado, isso não acontece!<br><br>Clique em 'INSTALAR APP' acima.";
                 return false;
             }
         }
     }
     
-    // Aplicar o stream de vídeo
     function aplicarStream(stream) {
         streamAtual = stream;
         video.srcObject = stream;
@@ -273,42 +304,39 @@
         video.onloadedmetadata = () => {
             video.play();
             statusDiv.className = "status sucesso";
-            statusDiv.innerHTML = "✅ CÂMERA ATIVA!<br><small>Aponte para o gabarito e clique em TIRAR FOTO</small>";
+            statusDiv.innerHTML = "✅ CÂMERA ATIVA! Aponte para o gabarito e clique em TIRAR FOTO";
         };
     }
 
-    // ============================================================
-    // 2. REINICIAR CÂMERA (forçar nova permissão)
-    // ============================================================
     async function reiniciarCamera() {
         if (streamAtual) {
             streamAtual.getTracks().forEach(track => track.stop());
             streamAtual = null;
         }
-        await solicitarCameraAutomaticamente();
+        await solicitarCamera();
     }
 
     // ============================================================
-    // 3. CAPTURAR E PROCESSAR (VERSÃO DEMONSTRAÇÃO)
+    // 4. CAPTURAR E PROCESSAR
     // ============================================================
     async function capturarEProcessar() {
         if (!video.videoWidth || !video.videoHeight) {
-            statusDiv.innerHTML = "⚠️ Aguarde a câmera iniciar completamente";
+            statusDiv.innerHTML = "⚠️ Aguarde a câmera iniciar";
             return;
         }
 
-        statusDiv.innerHTML = "📸 Capturando imagem...";
+        statusDiv.innerHTML = "📸 Capturando...";
         
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        statusDiv.innerHTML = "🔍 Processando gabarito...";
+        statusDiv.innerHTML = "🔍 Processando...";
         
-        // Simular processamento (em breve: detecção real dos retângulos pintados)
         await new Promise(resolve => setTimeout(resolve, 800));
         
-        // Gerar respostas de exemplo (cíclico A,B,C,D)
+        // [DETECÇÃO REAL SERÁ IMPLEMENTADA AQUI]
+        // Por enquanto, simulação
         respostasDetectadas = {};
         for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
             const idx = (q - 1) % CONFIG.alternativas.length;
@@ -316,13 +344,10 @@
         }
         
         exibirResultados();
-        statusDiv.innerHTML = "✅ Gabarito processado! Respostas detectadas abaixo.";
+        statusDiv.innerHTML = "✅ Gabarito processado!";
         statusDiv.className = "status sucesso";
     }
 
-    // ============================================================
-    // 4. SIMULAR MARCAÇÃO (para teste)
-    // ============================================================
     function simularMarcacao() {
         respostasDetectadas = {};
         for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
@@ -330,13 +355,10 @@
             respostasDetectadas[q] = CONFIG.alternativas[idx];
         }
         exibirResultados();
-        statusDiv.innerHTML = "🧪 Modo simulação: respostas A,B,C,D em ciclo";
+        statusDiv.innerHTML = "🧪 Modo simulação";
         statusDiv.className = "status aviso";
     }
 
-    // ============================================================
-    // 5. EXIBIR RESULTADOS
-    // ============================================================
     function exibirResultados() {
         if (!respostasDetectadas || Object.keys(respostasDetectadas).length === 0) {
             listaRespostas.innerHTML = "⚠️ Nenhuma resposta detectada";
@@ -353,15 +375,14 @@
         }
         html += '</div>';
         html += `<div style="margin-top:12px; text-align:center; background:#252540; padding:8px; border-radius:8px;">
-                    ✅ ${Object.keys(respostasDetectadas).length} de ${CONFIG.totalQuestoes} questões detectadas
+                    ✅ ${Object.keys(respostasDetectadas).length} de ${CONFIG.totalQuestoes} questões
                 </div>`;
         
         listaRespostas.innerHTML = html;
-        console.log("Respostas detectadas:", respostasDetectadas);
     }
 
     // ============================================================
-    // 6. GERAR GABARITO IMPRIMÍVEL
+    // 5. GERAR GABARITO IMPRIMÍVEL
     // ============================================================
     function gerarGabaritoPDF() {
         const win = window.open('', '_blank');
@@ -458,25 +479,22 @@
     }
 
     // ============================================================
-    // 7. EVENTOS E INICIALIZAÇÃO
+    // 6. EVENTOS
     // ============================================================
     btnCapture.addEventListener('click', capturarEProcessar);
     btnSimular.addEventListener('click', simularMarcacao);
     btnReiniciar.addEventListener('click', reiniciarCamera);
     
-    // Botão gerar PDF
     const btnPDF = document.createElement('button');
     btnPDF.textContent = '🖨️ GERAR GABARITO PDF';
     btnPDF.classList.add('success');
     btnPDF.addEventListener('click', gerarGabaritoPDF);
     document.querySelector('.flex').appendChild(btnPDF);
     
-    // ============================================================
-    // INICIAR - SOLICITA CÂMERA AUTOMATICAMENTE
-    // ============================================================
-    // Quando a página carregar, já pede a câmera
+    // Iniciar
     window.addEventListener('load', () => {
-        solicitarCameraAutomaticamente();
+        verificarModoApp();
+        solicitarCamera();
     });
 </script>
 </body>
