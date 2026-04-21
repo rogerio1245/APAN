@@ -9,40 +9,49 @@
             box-sizing: border-box;
         }
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: #121212;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: #0a0a0a;
             color: #fff;
             margin: 0;
             padding: 16px;
             text-align: center;
         }
         h1 {
-            font-size: 1.4rem;
-            margin: 0 0 8px 0;
+            font-size: 1.3rem;
+            margin: 0 0 8px;
         }
         .status {
-            background: #1e1e2e;
+            background: #1a1a2a;
             padding: 12px;
             border-radius: 12px;
             margin: 12px 0;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-family: monospace;
+            word-break: break-word;
         }
         .status.erro {
-            background: #4a1a1a;
+            background: #4a1515;
             color: #ff8888;
+            border-left: 4px solid #ff4444;
         }
         .status.sucesso {
-            background: #1a4a1a;
+            background: #154a15;
             color: #88ff88;
+            border-left: 4px solid #44ff44;
+        }
+        .status.aviso {
+            background: #4a4a15;
+            color: #ffff88;
+            border-left: 4px solid #ffff44;
         }
         .camera-container {
             background: #000;
-            border-radius: 20px;
+            border-radius: 16px;
             overflow: hidden;
             margin: 16px 0;
-            position: relative;
             aspect-ratio: 4 / 3;
+            position: relative;
+            border: 1px solid #333;
         }
         video {
             width: 100%;
@@ -56,135 +65,223 @@
             background: #0d6efd;
             border: none;
             color: white;
-            padding: 14px 28px;
-            border-radius: 50px;
-            font-size: 1.1rem;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-size: 1rem;
             font-weight: bold;
-            margin: 8px;
+            margin: 6px;
             cursor: pointer;
+            transition: 0.2s;
         }
         button:active {
-            transform: scale(0.97);
+            transform: scale(0.96);
         }
-        button:disabled {
-            background: #555;
-            opacity: 0.6;
+        button.secondary {
+            background: #6c757d;
         }
-        .resultados {
-            background: #1e1e2e;
-            border-radius: 16px;
-            padding: 12px;
-            margin-top: 20px;
-            text-align: left;
-            max-height: 300px;
-            overflow-y: auto;
-            font-size: 0.8rem;
+        button.success {
+            background: #198754;
         }
-        .gabarito-preview {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
-            margin-top: 10px;
-        }
-        .gabarito-item {
-            background: #2a2a3a;
-            padding: 6px;
-            border-radius: 8px;
-            text-align: center;
-            font-family: monospace;
-            font-weight: bold;
-        }
-        .gabarito-item span {
-            color: #ffaa44;
+        button.danger {
+            background: #dc3545;
         }
         select, input {
-            padding: 10px;
-            border-radius: 30px;
+            padding: 10px 16px;
+            border-radius: 40px;
             border: none;
             margin: 5px;
             font-size: 0.9rem;
+            background: #2a2a3a;
+            color: white;
         }
         .flex {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 8px;
+            margin: 12px 0;
+        }
+        .resultados {
+            background: #1a1a2a;
+            border-radius: 16px;
+            padding: 12px;
+            margin-top: 20px;
+            text-align: left;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        .gabarito-grade {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .gabarito-item {
+            background: #252540;
+            padding: 6px 4px;
+            border-radius: 8px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+        .gabarito-item span {
+            color: #ffaa44;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        .dicas {
+            background: #1a1a2a;
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 16px;
+            font-size: 0.7rem;
+            text-align: left;
+            color: #aaa;
+        }
+        hr {
+            border-color: #333;
+            margin: 16px 0;
         }
     </style>
 </head>
 <body>
 
 <h1>📸 Scanner de Gabarito</h1>
-<p style="font-size:0.8rem; opacity:0.7;">Pinte o retângulo inteiro | App detecta A/B/C/D</p>
+<p style="font-size:0.75rem; opacity:0.7;">Pinte o retângulo inteiro | Detecção automática</p>
 
 <div class="status" id="status">
-    🔄 Iniciando câmera...
+    🔄 Inicializando...
 </div>
 
 <div class="camera-container">
     <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas"></canvas>
 </div>
 
 <div class="flex">
+    <select id="cameraSelect" style="display:none;">
+        <option value="">Selecionar câmera...</option>
+    </select>
     <button id="btnCapture">📷 TIRAR FOTO</button>
-    <button id="btnSimular">🧪 SIMULAR MARCAÇÃO</button>
+    <button id="btnSimular">🧪 SIMULAR</button>
+    <button id="btnReiniciarCam" class="secondary">🔄 Reiniciar Câmera</button>
 </div>
 
 <div class="resultados" id="resultados">
     <strong>📋 RESPOSTAS DETECTADAS:</strong>
     <div id="listaRespostas" style="margin-top: 10px;">
-        ⏳ Nenhuma captura ainda
+        ⏳ Aguardando captura...
     </div>
 </div>
 
+<div class="dicas">
+    <strong>🔧 DICAS PARA A CÂMERA FUNCIONAR:</strong><br>
+    • Use <strong>Chrome</strong> ou <strong>Edge</strong> no celular (Safari no iPhone precisa de permissão manual)<br>
+    • No iPhone: Vá em <strong>Configurações → Safari → Câmera → Permitir</strong><br>
+    • No Android: Toque no cadeado 🔒 e permita acesso à câmera<br>
+    • Se não funcionar, clique em <strong>"Reiniciar Câmera"</strong> e autorize<br>
+    • Teste primeiro o botão <strong>"SIMULAR"</strong> para ver o layout das respostas
+</div>
+
+<canvas id="canvas" style="display:none;"></canvas>
+
 <script>
     // ============================================================
-    // CONFIGURAÇÃO DO GABARITO (AJUSTE CONFORME SEU MODELO)
+    // CONFIGURAÇÃO
     // ============================================================
     const CONFIG = {
-        questoesPorBloco: 15,    // 15 questões em cada bloco
-        totalQuestoes: 30,       // 15 + 15 = 30
-        alternativas: ['A', 'B', 'C', 'D'],
-        limiarPreenchimento: 0.35,  // 35% de pixels escuros = preenchido
-        debug: true              // Mostra informações de debug
+        questoesPorBloco: 15,
+        totalQuestoes: 30,
+        alternativas: ['A', 'B', 'C', 'D']
     };
 
-    // Elementos DOM
+    // Elementos
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
+    const statusDiv = document.getElementById('status');
     const btnCapture = document.getElementById('btnCapture');
     const btnSimular = document.getElementById('btnSimular');
-    const statusDiv = document.getElementById('status');
+    const btnReiniciar = document.getElementById('btnReiniciarCam');
+    const cameraSelect = document.getElementById('cameraSelect');
     const listaRespostas = document.getElementById('listaRespostas');
 
     let streamAtual = null;
+    let dispositivos = [];
     let respostasDetectadas = {};
 
     // ============================================================
-    // 1. INICIAR CÂMERA (COM FALLBACK)
+    // 1. LISTAR CÂMERAS DISPONÍVEIS
     // ============================================================
-    async function iniciarCamera() {
-        // Para qualquer stream anterior
+    async function listarCameras() {
+        try {
+            // Primeiro pede permissão para listar
+            await navigator.mediaDevices.getUserMedia({ video: true });
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            dispositivos = devices.filter(device => device.kind === 'videoinput');
+            
+            if (dispositivos.length > 0) {
+                cameraSelect.style.display = 'inline-block';
+                cameraSelect.innerHTML = '<option value="">📷 Selecione uma câmera...</option>';
+                dispositivos.forEach((device, idx) => {
+                    const label = device.label || `Câmera ${idx + 1}`;
+                    cameraSelect.innerHTML += `<option value="${device.deviceId}">${label}</option>`;
+                });
+                return true;
+            }
+            return false;
+        } catch (err) {
+            console.warn("Erro ao listar câmeras:", err);
+            return false;
+        }
+    }
+
+    // ============================================================
+    // 2. INICIAR CÂMERA (com deviceId específico ou padrão)
+    // ============================================================
+    async function iniciarCamera(deviceId = null) {
+        // Parar stream atual
         if (streamAtual) {
             streamAtual.getTracks().forEach(track => track.stop());
+            streamAtual = null;
         }
 
-        const constraintsList = [
-            { video: { facingMode: "environment" } },  // Câmera traseira
-            { video: { facingMode: "user" } },         // Câmera frontal
-            { video: true }                             // Qualquer câmera
-        ];
+        statusDiv.className = "status aviso";
+        statusDiv.innerHTML = "📷 Solicitando permissão da câmera...";
 
-        for (const constraints of constraintsList) {
+        try {
+            let constraints;
+            if (deviceId) {
+                constraints = { video: { deviceId: { exact: deviceId } } };
+            } else {
+                // Tenta traseira primeiro, depois frontal, depois qualquer uma
+                constraints = { video: { facingMode: { exact: "environment" } } };
+            }
+            
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = stream;
+            streamAtual = stream;
+            
+            await new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    video.play();
+                    resolve();
+                };
+            });
+            
+            statusDiv.className = "status sucesso";
+            statusDiv.innerHTML = "✅ Câmera ativa! Aponte para o gabarito e clique em TIRAR FOTO";
+            return true;
+            
+        } catch (err) {
+            console.error("Erro com câmera específica:", err);
+            
+            // Tentativa 2: sem facingMode específico
             try {
-                statusDiv.innerHTML = `📷 Tentando câmera: ${constraints.video.facingMode || 'padrão'}...`;
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                statusDiv.innerHTML = "📷 Tentando câmera padrão...";
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
                 streamAtual = stream;
                 
-                // Aguardar vídeo carregar
                 await new Promise((resolve) => {
                     video.onloadedmetadata = () => {
                         video.play();
@@ -193,21 +290,24 @@
                 });
                 
                 statusDiv.className = "status sucesso";
-                statusDiv.innerHTML = "✅ Câmera ativa! Aponte para o gabarito e clique em TIRAR FOTO";
+                statusDiv.innerHTML = "✅ Câmera ativa (modo padrão)!";
                 return true;
-            } catch (err) {
-                console.warn("Falha com constraints:", constraints, err);
-                continue;
+                
+            } catch (err2) {
+                statusDiv.className = "status erro";
+                statusDiv.innerHTML = "❌ NENHUMA CÂMERA ENCONTRADA.<br><br>" +
+                    "SOLUÇÕES:<br>" +
+                    "1. No Chrome/Edge: acesse <strong>chrome://settings/content/camera</strong> e permita o site<br>" +
+                    "2. No iPhone: Configurações → Safari → Câmera → Permitir<br>" +
+                    "3. Reinicie o navegador<br>" +
+                    "4. Teste outro navegador (Edge ou Chrome)";
+                return false;
             }
         }
-
-        statusDiv.className = "status erro";
-        statusDiv.innerHTML = "❌ ERRO: Nenhuma câmera encontrada. Verifique:\n- HTTPS (ou localhost)\n- Permissão concedida\n- Navegador atualizado (Chrome/Edge/Safari)";
-        return false;
     }
 
     // ============================================================
-    // 2. CAPTURAR FOTO E PROCESSAR
+    // 3. CAPTURAR E PROCESSAR (VERSÃO SIMULADA POR ENQUANTO)
     // ============================================================
     async function capturarEProcessar() {
         if (!video.videoWidth || !video.videoHeight) {
@@ -217,59 +317,46 @@
 
         statusDiv.innerHTML = "📸 Capturando imagem...";
         
-        // Ajustar canvas para o tamanho do vídeo
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        
-        // Desenhar o frame atual
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        // Obter dados da imagem
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        // Mostrar preview da imagem capturada (opcional)
+        const previewUrl = canvas.toDataURL('image/jpeg', 0.8);
         
-        statusDiv.innerHTML = "🔍 Processando gabarito...";
+        statusDiv.innerHTML = "🔍 Processando gabarito (modo demonstração)...";
         
-        // Simular processamento (versão REAL será implementada após validar câmera)
-        // Por enquanto, geramos respostas de demonstração
-        await simularProcessamento(imageData);
+        // Simular processamento
+        await new Promise(resolve => setTimeout(resolve, 800));
         
-        statusDiv.innerHTML = "✅ Gabarito processado! Respostas detectadas abaixo.";
-    }
-
-    // ============================================================
-    // 3. SIMULAÇÃO DE PROCESSAMENTO (enquanto não temos imagem real)
-    // ============================================================
-    async function simularProcessamento(imageData) {
-        // Simula um tempo de processamento
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Gerar respostas aleatórias para demonstração
+        // Gerar respostas de exemplo
         respostasDetectadas = {};
         for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
-            const altAleatoria = CONFIG.alternativas[Math.floor(Math.random() * CONFIG.alternativas.length)];
-            respostasDetectadas[q] = altAleatoria;
+            const idx = (q - 1) % CONFIG.alternativas.length;
+            respostasDetectadas[q] = CONFIG.alternativas[idx];
         }
         
         exibirResultados();
+        statusDiv.innerHTML = "✅ Gabarito processado! (Modo demonstração - em breve detecção real)";
+        statusDiv.className = "status sucesso";
     }
 
     // ============================================================
-    // 4. MODO TESTE - SIMULAR MARCAÇÃO MANUAL
+    // 4. SIMULAR MARCAÇÃO
     // ============================================================
-    function simularMarcacaoManual() {
+    function simularMarcacao() {
         respostasDetectadas = {};
         for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
-            // Alterna entre A, B, C, D de forma cíclica para teste
             const idx = (q - 1) % CONFIG.alternativas.length;
             respostasDetectadas[q] = CONFIG.alternativas[idx];
         }
         exibirResultados();
-        statusDiv.innerHTML = "🧪 Modo teste: respostas simuladas (cíclico A,B,C,D)";
-        statusDiv.className = "status";
+        statusDiv.innerHTML = "🧪 Modo simulação: respostas A,B,C,D em ciclo";
+        statusDiv.className = "status aviso";
     }
 
     // ============================================================
-    // 5. EXIBIR RESULTADOS NA TELA
+    // 5. EXIBIR RESULTADOS
     // ============================================================
     function exibirResultados() {
         if (!respostasDetectadas || Object.keys(respostasDetectadas).length === 0) {
@@ -277,189 +364,147 @@
             return;
         }
         
-        // Criar grade de respostas
-        let html = '<div class="gabarito-preview">';
+        let html = '<div class="gabarito-grade">';
         for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
             const resposta = respostasDetectadas[q] || "?";
-            const cor = resposta !== "?" ? "#ffaa44" : "#888";
             html += `<div class="gabarito-item">
                         Q${q}<br>
-                        <span style="color:${cor}; font-size:1.2rem;">${resposta}</span>
+                        <span>${resposta}</span>
                      </div>`;
         }
         html += '</div>';
-        
-        // Adicionar resumo
-        const questoesRespondidas = Object.keys(respostasDetectadas).length;
-        html += `<div style="margin-top:12px; padding:8px; background:#2a2a3a; border-radius:8px; text-align:center;">
-                    ✅ ${questoesRespondidas} de ${CONFIG.totalQuestoes} questões detectadas
-                 </div>`;
+        html += `<div style="margin-top:12px; text-align:center; background:#252540; padding:8px; border-radius:8px;">
+                    ✅ ${Object.keys(respostasDetectadas).length} questões detectadas
+                </div>`;
         
         listaRespostas.innerHTML = html;
-        
-        // Debug no console
-        if (CONFIG.debug) {
-            console.log("Respostas detectadas:", respostasDetectadas);
-        }
+        console.log("Respostas:", respostasDetectadas);
     }
 
     // ============================================================
-    // 6. FUNÇÃO PARA GERAR GABARITO IMPRIMÍVEL (PDF)
+    // 6. GERAR GABARITO IMPRIMÍVEL
     // ============================================================
-    function gerarGabaritoParaImpressao() {
-        const janela = window.open('', '_blank');
-        janela.document.write(`
+    function gerarGabaritoPDF() {
+        const win = window.open('', '_blank');
+        win.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
             <title>Gabarito para Impressão</title>
             <style>
-                @page { size: A4; margin: 15mm; }
-                body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-                .pagina { position: relative; }
+                @page { size: A4; margin: 12mm; }
+                body { font-family: Arial, sans-serif; }
                 .marcador {
-                    width: 10mm;
-                    height: 10mm;
-                    background: black;
+                    width: 8mm; height: 8mm; background: black;
                     position: absolute;
                 }
-                .topo-esq { top: 0; left: 0; }
-                .topo-dir { top: 0; right: 0; }
-                .baixo-esq { bottom: 0; left: 0; }
-                .baixo-dir { bottom: 0; right: 0; }
-                .cabecalho { margin-bottom: 20px; text-align: center; }
-                .bloco {
-                    display: inline-block;
-                    width: 48%;
-                    vertical-align: top;
-                    margin: 0 1%;
-                }
-                .questao {
-                    margin: 8px 0;
-                    display: flex;
-                    align-items: center;
-                }
-                .numero {
-                    width: 35px;
-                    font-weight: bold;
-                }
-                .alternativas {
-                    display: flex;
-                    gap: 12px;
-                }
-                .alternativa {
-                    display: inline-flex;
-                    flex-direction: column;
-                    align-items: center;
-                }
+                .topo-esq { top: 5mm; left: 5mm; }
+                .topo-dir { top: 5mm; right: 5mm; }
+                .baixo-esq { bottom: 5mm; left: 5mm; }
+                .baixo-dir { bottom: 5mm; right: 5mm; }
+                .bloco { display: inline-block; width: 48%; vertical-align: top; }
+                .questao { margin: 6px 0; display: flex; align-items: center; }
+                .numero { width: 35px; font-weight: bold; }
+                .alternativas { display: flex; gap: 8px; }
                 .retangulo {
-                    width: 12mm;
-                    height: 12mm;
+                    width: 10mm; height: 10mm;
                     border: 1.5px solid black;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-weight: bold;
-                    font-size: 14px;
+                    display: inline-block;
                 }
-                .letra {
-                    margin-top: 4px;
-                    font-size: 12px;
-                }
-                hr { margin: 20px 0; }
-                .instrucoes {
-                    background: #f0f0f0;
-                    padding: 10px;
-                    font-size: 12px;
-                    margin-top: 30px;
-                }
+                .letra { font-size: 10px; text-align: center; }
+                .alt-item { text-align: center; }
+                .cabecalho { margin-bottom: 15px; }
+                .instrucoes { margin-top: 20px; font-size: 10px; background: #eee; padding: 8px; }
                 @media print {
                     .no-print { display: none; }
-                    .marcador { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                 }
             </style>
         </head>
         <body>
-            <div class="pagina">
-                <!-- Marcadores de canto para detecção -->
-                <div class="marcador topo-esq"></div>
-                <div class="marcador topo-dir"></div>
-                <div class="marcador baixo-esq"></div>
-                <div class="marcador baixo-dir"></div>
-                
-                <div class="cabecalho">
-                    <h2>GABARITO OFICIAL</h2>
-                    <p><strong>NOME:</strong> _________________________ &nbsp;&nbsp;
-                       <strong>TURMA:</strong> _______ &nbsp;&nbsp;
-                       <strong>DATA:</strong> ___/___/___</p>
-                </div>
-                
-                <div class="bloco">
-                    <h3>📘 BLOCO 01 - MATEMÁTICA</h3>
-                    ${Array.from({length: CONFIG.questoesPorBloco}, (_, i) => `
-                        <div class="questao">
-                            <div class="numero">Q${i+1}</div>
-                            <div class="alternativas">
-                                ${CONFIG.alternativas.map(letra => `
-                                    <div class="alternativa">
-                                        <div class="retangulo"></div>
-                                        <div class="letra">${letra}</div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-                
-                <div class="bloco">
-                    <h3>📗 BLOCO 02 - MATEMÁTICA</h3>
-                    ${Array.from({length: CONFIG.questoesPorBloco}, (_, i) => `
-                        <div class="questao">
-                            <div class="numero">Q${i+1 + CONFIG.questoesPorBloco}</div>
-                            <div class="alternativas">
-                                ${CONFIG.alternativas.map(letra => `
-                                    <div class="alternativa">
-                                        <div class="retangulo"></div>
-                                        <div class="letra">${letra}</div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-                
-                <div class="instrucoes">
-                    <strong>📌 INSTRUÇÕES:</strong><br>
-                    • PINTE COMPLETAMENTE o retângulo da alternativa escolhida.<br>
-                    • Use caneta escura (preta ou azul).<br>
-                    • Não rasure. Se errar, preencha o retângulo todo e marque a correta ao lado.<br>
-                    • Os quatro quadrados pretos nos cantos são para calibração do scanner.
-                </div>
+            <div class="marcador topo-esq"></div>
+            <div class="marcador topo-dir"></div>
+            <div class="marcador baixo-esq"></div>
+            <div class="marcador baixo-dir"></div>
+            
+            <div class="cabecalho">
+                <h2>GABARITO</h2>
+                NOME: _________________________ TURMA: _______ DATA: ___/___/___
             </div>
-            <div class="no-print" style="text-align:center; margin-top:20px;">
-                <button onclick="window.print()">🖨️ IMPRIMIR GABARITO</button>
+            
+            <div class="bloco">
+                <h3>BLOCO 01</h3>
+                ${Array.from({length: 15}, (_, i) => `
+                    <div class="questao">
+                        <div class="numero">Q${i+1}</div>
+                        <div class="alternativas">
+                            ${CONFIG.alternativas.map(letra => `
+                                <div class="alt-item">
+                                    <div class="retangulo"></div>
+                                    <div class="letra">${letra}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="bloco">
+                <h3>BLOCO 02</h3>
+                ${Array.from({length: 15}, (_, i) => `
+                    <div class="questao">
+                        <div class="numero">Q${i+16}</div>
+                        <div class="alternativas">
+                            ${CONFIG.alternativas.map(letra => `
+                                <div class="alt-item">
+                                    <div class="retangulo"></div>
+                                    <div class="letra">${letra}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="instrucoes">
+                ⚠️ PINTE COMPLETAMENTE o retângulo da alternativa escolhida.
+                Os 4 quadrados pretos nos cantos são para calibração.
+            </div>
+            <div class="no-print" style="margin-top:20px;">
+                <button onclick="window.print()">🖨️ IMPRIMIR</button>
             </div>
         </body>
         </html>
         `);
-        janela.document.close();
+        win.document.close();
     }
 
     // ============================================================
     // 7. EVENTOS E INICIALIZAÇÃO
     // ============================================================
     btnCapture.addEventListener('click', capturarEProcessar);
-    btnSimular.addEventListener('click', simularMarcacaoManual);
+    btnSimular.addEventListener('click', simularMarcacao);
+    btnReiniciar.addEventListener('click', () => iniciarCamera());
     
-    // Botão extra para gerar PDF (adicionei no HTML dinamicamente)
-    const btnGerarPDF = document.createElement('button');
-    btnGerarPDF.textContent = '🖨️ GERAR GABARITO PARA IMPRIMIR';
-    btnGerarPDF.style.background = '#198754';
-    btnGerarPDF.addEventListener('click', gerarGabaritoParaImpressao);
-    document.querySelector('.flex').appendChild(btnGerarPDF);
+    cameraSelect.addEventListener('change', async (e) => {
+        if (e.target.value) {
+            await iniciarCamera(e.target.value);
+        }
+    });
+    
+    // Adicionar botão de gerar PDF
+    const btnPDF = document.createElement('button');
+    btnPDF.textContent = '🖨️ GERAR GABARITO PDF';
+    btnPDF.classList.add('success');
+    btnPDF.addEventListener('click', gerarGabaritoPDF);
+    document.querySelector('.flex').appendChild(btnPDF);
     
     // Iniciar
-    iniciarCamera();
+    async function init() {
+        await listarCameras();
+        await iniciarCamera();
+    }
+    
+    init();
 </script>
 </body>
 </html>
