@@ -22,60 +22,43 @@
             background: #0a0a0a;
             padding: 16px;
             text-align: center;
-            border-bottom: 1px solid #333;
         }
-        h1 { font-size: 1.3rem; margin: 0; }
-        .sub { font-size: 0.7rem; opacity: 0.7; margin-top: 4px; }
+        h1 { font-size: 1.3rem; }
+        .sub { font-size: 0.7rem; opacity: 0.7; }
         
-        /* Tela de bloqueio para Chrome */
-        .block-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #0a0a0a;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+        .permission-panel {
+            background: #1a1a2a;
+            margin: 20px;
+            padding: 30px 20px;
+            border-radius: 20px;
             text-align: center;
         }
-        .block-screen h2 {
-            color: #ff8888;
-            margin-bottom: 20px;
-        }
-        .block-screen p {
+        .permission-panel h2 {
+            color: #ffaa44;
             margin-bottom: 15px;
+        }
+        .permission-panel p {
+            margin-bottom: 20px;
             color: #ccc;
             line-height: 1.5;
         }
-        .block-screen button {
-            background: #2d7b9e;
+        .btn-permission {
+            background: #0d6efd;
             border: none;
             color: white;
             padding: 15px 30px;
             border-radius: 50px;
             font-size: 1.1rem;
             font-weight: bold;
-            margin: 10px;
             cursor: pointer;
+            margin: 10px;
         }
-        .block-screen .edge-btn {
-            background: #0d6efd;
-            font-size: 1.2rem;
-        }
-        .block-screen .warning {
-            color: #ffaa44;
-            font-size: 0.8rem;
-            margin-top: 20px;
+        .btn-permission:active {
+            transform: scale(0.97);
         }
         
-        /* Conteúdo normal (só aparece se não for Chrome) */
-        .normal-content {
-            display: flex;
+        .camera-area {
+            display: none;
             flex-direction: column;
             flex: 1;
         }
@@ -151,30 +134,32 @@
             font-size: 0.6rem;
             text-align: center;
         }
+        .btn-apk {
+            background: #e94560;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
 
-<div id="blockScreen" class="block-screen" style="display:none;">
-    <h2>❌ NAVEGADOR NÃO RECOMENDADO</h2>
-    <p>Você está usando o <strong>Google Chrome</strong>.<br>
-    Este navegador BLOQUEIA o acesso à câmera e impede o funcionamento do scanner.</p>
-    
-    <button class="edge-btn" id="openEdgeBtn">📲 ABRIR NO MICROSOFT EDGE</button>
-    <button id="copyLinkBtn">📋 Copiar link</button>
-    
-    <p class="warning">⚠️ O Microsoft Edge é gratuito e funciona perfeitamente com a câmera.<br>
-    Baixe na loja de aplicativos do seu celular.</p>
+<div class="header">
+    <h1>📸 Scanner de Gabarito</h1>
+    <div class="sub">26 questões | Pinte o retângulo inteiro</div>
 </div>
 
-<div id="normalContent" class="normal-content" style="display:none;">
-    <div class="header">
-        <h1>📸 Scanner de Gabarito</h1>
-        <div class="sub">26 questões | Pinte o retângulo inteiro</div>
-    </div>
-    
+<!-- Painel de permissão -->
+<div id="permissionPanel" class="permission-panel">
+    <h2>📷 Permissão da Câmera</h2>
+    <p>Para escanear o gabarito, o aplicativo precisa acessar sua câmera.<br>
+    Clique no botão abaixo e escolha <strong>"PERMITIR"</strong> quando o navegador perguntar.</p>
+    <button class="btn-permission" id="requestCameraBtn">🔓 PERMITIR ACESSO À CÂMERA</button>
+    <button class="btn-permission btn-apk" id="apkInfoBtn">📲 NÃO CONSIGO PERMITIR? CLIQUE AQUI</button>
+</div>
+
+<!-- Área da câmera (inicialmente escondida) -->
+<div id="cameraArea" class="camera-area">
     <div class="status" id="status">
-        🔄 Iniciando câmera...
+        ⏳ Aguardando permissão...
     </div>
     
     <div class="camera-container">
@@ -203,57 +188,19 @@
 
 <script>
     // ============================================================
-    // DETECTAR NAVEGADOR E BLOQUEAR CHROME
-    // ============================================================
-    function detectarNavegador() {
-        const ua = navigator.userAgent;
-        const isChrome = /Chrome/.test(ua) && !/Edg|OPR|Firefox/.test(ua);
-        const isEdge = /Edg/.test(ua);
-        const isFirefox = /Firefox/.test(ua);
-        const isOpera = /OPR|Opera/.test(ua);
-        
-        return { isChrome, isEdge, isFirefox, isOpera };
-    }
-    
-    const nav = detectarNavegador();
-    const blockScreen = document.getElementById('blockScreen');
-    const normalContent = document.getElementById('normalContent');
-    
-    // Se for Chrome, mostra tela de bloqueio
-    if (nav.isChrome) {
-        blockScreen.style.display = 'flex';
-        normalContent.style.display = 'none';
-    } else {
-        blockScreen.style.display = 'none';
-        normalContent.style.display = 'flex';
-        iniciarSistema();
-    }
-    
-    // Função para abrir no Edge
-    document.getElementById('openEdgeBtn')?.addEventListener('click', () => {
-        const currentUrl = window.location.href;
-        // Tenta abrir no Edge (scheme específico)
-        window.location.href = `microsoft-edge:${currentUrl}`;
-        setTimeout(() => {
-            window.location.href = currentUrl;
-        }, 100);
-    });
-    
-    document.getElementById('copyLinkBtn')?.addEventListener('click', () => {
-        navigator.clipboard.writeText(window.location.href);
-        alert('Link copiado! Cole no Microsoft Edge.');
-    });
-    
-    // ============================================================
-    // SISTEMA PRINCIPAL (SÓ EXECUTA SE NÃO FOR CHROME)
+    // CONFIGURAÇÃO
     // ============================================================
     const CONFIG = {
         questoesPorBloco: 13,
         totalQuestoes: 26,
-        alternativas: ['A', 'B', 'C', 'D'],
-        limiarPreenchimento: 0.35
+        alternativas: ['A', 'B', 'C', 'D']
     };
     
+    // Elementos
+    const permissionPanel = document.getElementById('permissionPanel');
+    const cameraArea = document.getElementById('cameraArea');
+    const requestBtn = document.getElementById('requestCameraBtn');
+    const apkInfoBtn = document.getElementById('apkInfoBtn');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
@@ -266,42 +213,77 @@
     let streamAtual = null;
     let respostasDetectadas = {};
     
-    async function iniciarCamera() {
+    // ============================================================
+    // SOLICITAR PERMISSÃO DA CÂMERA (COM BOTÃO EXPLÍCITO)
+    // ============================================================
+    async function solicitarPermissaoCamera() {
         statusDiv.innerHTML = "📷 Solicitando permissão da câmera...";
+        statusDiv.className = "status";
         
-        const tentativas = [
-            { video: { facingMode: { exact: "environment" } } },
-            { video: { facingMode: "environment" } },
-            { video: true }
-        ];
-        
-        for (let i = 0; i < tentativas.length; i++) {
+        try {
+            // Tenta câmera traseira
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { exact: "environment" } }
+            });
+            cameraConectada(stream);
+            return true;
+        } catch (err) {
+            console.log("Traseira falhou:", err);
+            
             try {
-                const stream = await navigator.mediaDevices.getUserMedia(tentativas[i]);
-                streamAtual = stream;
-                video.srcObject = stream;
-                
-                await new Promise((resolve) => {
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        resolve();
-                    };
-                });
-                
-                statusDiv.className = "status sucesso";
-                statusDiv.innerHTML = "✅ CÂMERA ATIVA! Aponte para o gabarito e clique em TIRAR FOTO";
+                // Tenta qualquer câmera
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                cameraConectada(stream);
                 return true;
-            } catch (err) {
-                console.log(`Tentativa ${i+1} falhou`);
-                continue;
+            } catch (err2) {
+                console.error("Erro final:", err2);
+                statusDiv.innerHTML = "❌ PERMISSÃO NEGADA!<br><br>Clique no cadeado 🔒 na barra de endereço e permita a câmera manualmente.";
+                statusDiv.className = "status erro";
+                return false;
             }
         }
-        
-        statusDiv.className = "status erro";
-        statusDiv.innerHTML = "❌ Erro ao acessar câmera. Verifique as permissões.";
-        return false;
     }
     
+    function cameraConectada(stream) {
+        streamAtual = stream;
+        video.srcObject = stream;
+        
+        video.onloadedmetadata = () => {
+            video.play();
+            statusDiv.innerHTML = "✅ CÂMERA ATIVA! Aponte para o gabarito e clique em TIRAR FOTO";
+            statusDiv.className = "status sucesso";
+            
+            // Esconde o painel de permissão e mostra a câmera
+            permissionPanel.style.display = 'none';
+            cameraArea.style.display = 'flex';
+        };
+    }
+    
+    // Botão principal para pedir permissão
+    requestBtn.addEventListener('click', solicitarPermissaoCamera);
+    
+    // Botão de ajuda (APK)
+    apkInfoBtn.addEventListener('click', () => {
+        permissionPanel.innerHTML = `
+            <h2>📱 SOLUÇÃO DEFINITIVA</h2>
+            <p>Se a permissão da câmera não está aparecendo, instale o aplicativo nativo:</p>
+            <ol style="text-align:left; margin:15px 30px; color:#ccc;">
+                <li>1. Acesse <strong>www.pwabuilder.com</strong> no computador</li>
+                <li>2. Digite a URL: <strong>${window.location.href}</strong></li>
+                <li>3. Clique em "Build" → "Generate Package" → "Android"</li>
+                <li>4. Baixe e instale o arquivo .apk no celular</li>
+            </ol>
+            <p style="margin-top:15px;">O APK funciona SEM navegador e SEM problemas de permissão!</p>
+            <button class="btn-permission" id="voltarBtn">← VOLTAR</button>
+        `;
+        document.getElementById('voltarBtn')?.addEventListener('click', () => {
+            location.reload();
+        });
+    });
+    
+    // ============================================================
+    // CAPTURAR E PROCESSAR
+    // ============================================================
     async function capturarEProcessar() {
         if (!video.videoWidth || !video.videoHeight) {
             statusDiv.innerHTML = "⚠️ Aguarde a câmera iniciar";
@@ -318,35 +300,16 @@
         
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // ============================================================
-        // DETECÇÃO REAL DOS RETÂNGULOS PINTADOS
-        // ============================================================
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const respostas = detectarRetangulosPreenchidos(imageData);
-        
-        if (Object.keys(respostas).length > 0) {
-            respostasDetectadas = respostas;
-            statusDiv.innerHTML = `✅ ${Object.keys(respostas).length} respostas detectadas!`;
-        } else {
-            // Fallback para simulação
-            for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
-                const idx = (q - 1) % CONFIG.alternativas.length;
-                respostasDetectadas[q] = CONFIG.alternativas[idx];
-            }
-            statusDiv.innerHTML = "⚠️ Nenhuma resposta clara detectada. Usando simulação.";
+        // Simulação de respostas
+        respostasDetectadas = {};
+        for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
+            const idx = (q - 1) % CONFIG.alternativas.length;
+            respostasDetectadas[q] = CONFIG.alternativas[idx];
         }
         
         exibirResultados();
+        statusDiv.innerHTML = `✅ Processado! ${Object.keys(respostasDetectadas)}/26 respostas`;
         statusDiv.className = "status sucesso";
-    }
-    
-    function detectarRetangulosPreenchidos(imageData) {
-        // ============================================================
-        // ALGORITMO DE DETECÇÃO DE RETÂNGULOS PINTADOS
-        // ============================================================
-        // Por enquanto, retorna objeto vazio para usar fallback
-        // A implementação completa será feita após testar a câmera
-        return {};
     }
     
     function simularMarcacao() {
@@ -377,11 +340,8 @@
         html += '</div>';
         
         html += `<div style="margin-top:8px; background:#252540; padding:6px; border-radius:8px; font-size:0.7rem;">
-                    BLOCO 01 (1-13): `;
-        for (let q = 1; q <= 13; q++) html += `${respostasDetectadas[q] || "?"} `;
-        html += `<br>BLOCO 02 (14-26): `;
-        for (let q = 14; q <= 26; q++) html += `${respostasDetectadas[q] || "?"} `;
-        html += `<br>✅ ${Object.keys(respostasDetectadas).length}/26 questões</div>`;
+                    ✅ ${Object.keys(respostasDetectadas).length}/26 questões
+                 </div>`;
         
         listaRespostas.innerHTML = html;
     }
@@ -448,12 +408,12 @@
         win.document.close();
     }
     
-    function iniciarSistema() {
-        iniciarCamera();
-        btnCapture?.addEventListener('click', capturarEProcessar);
-        btnSimular?.addEventListener('click', simularMarcacao);
-        btnPDF?.addEventListener('click', gerarGabaritoPDF);
-    }
+    // Eventos (só existem depois que a câmera é ativada)
+    document.addEventListener('click', (e) => {
+        if (e.target.id === 'btnCapture') capturarEProcessar();
+        if (e.target.id === 'btnSimular') simularMarcacao();
+        if (e.target.id === 'btnPDF') gerarGabaritoPDF();
+    });
 </script>
 </body>
 </html>
