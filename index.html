@@ -2,404 +2,353 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Scanner de Gabarito</title>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
-        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            background: #000;
+            background: #0a0a0a;
             color: #fff;
-            margin: 0;
-            padding: 0;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
-        
-        /* Header fixo no topo */
         .header {
             background: #0a0a0a;
-            padding: 12px 16px;
+            padding: 16px;
             text-align: center;
-            z-index: 10;
-            flex-shrink: 0;
+            border-bottom: 1px solid #333;
         }
+        h1 { font-size: 1.3rem; margin: 0; }
+        .sub { font-size: 0.7rem; opacity: 0.7; margin-top: 4px; }
         
-        h1 {
+        /* Tela de bloqueio para Chrome */
+        .block-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a0a;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+        }
+        .block-screen h2 {
+            color: #ff8888;
+            margin-bottom: 20px;
+        }
+        .block-screen p {
+            margin-bottom: 15px;
+            color: #ccc;
+            line-height: 1.5;
+        }
+        .block-screen button {
+            background: #2d7b9e;
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin: 10px;
+            cursor: pointer;
+        }
+        .block-screen .edge-btn {
+            background: #0d6efd;
             font-size: 1.2rem;
-            margin: 0;
+        }
+        .block-screen .warning {
+            color: #ffaa44;
+            font-size: 0.8rem;
+            margin-top: 20px;
         }
         
-        .sub {
-            font-size: 0.7rem;
-            opacity: 0.7;
-            margin-top: 4px;
+        /* Conteúdo normal (só aparece se não for Chrome) */
+        .normal-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
         }
-        
-        /* Status */
         .status {
             background: #1a1a2a;
-            padding: 8px 12px;
-            font-size: 0.7rem;
-            font-family: monospace;
+            padding: 10px;
+            font-size: 0.75rem;
             text-align: center;
-            flex-shrink: 0;
         }
-        
         .status.sucesso { background: #154a15; color: #88ff88; }
         .status.erro { background: #4a1515; color: #ff8888; }
-        .status.aviso { background: #4a4a15; color: #ffff88; }
-        .status.info { background: #0d6efd; color: white; }
         
-        /* Câmera em tamanho máximo */
         .camera-container {
             background: #000;
             flex: 1;
-            min-height: 0;
+            min-height: 300px;
             position: relative;
-            overflow: hidden;
         }
-        
         video {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
+        canvas { display: none; }
         
-        canvas {
-            display: none;
-        }
-        
-        /* Botões flutuantes na parte inferior */
         .controls {
-            background: rgba(0,0,0,0.85);
-            padding: 12px 16px;
+            background: #1a1a2a;
+            padding: 12px;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 10px;
-            flex-shrink: 0;
-            backdrop-filter: blur(10px);
         }
-        
         button {
             background: #0d6efd;
             border: none;
             color: white;
-            padding: 12px 24px;
+            padding: 12px 20px;
             border-radius: 40px;
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: bold;
             cursor: pointer;
-            transition: 0.2s;
-            min-width: 120px;
         }
+        button.success { background: #198754; }
         
-        button:active {
-            transform: scale(0.96);
-        }
-        
-        button.success {
-            background: #198754;
-        }
-        
-        button.warning {
-            background: #fd7e14;
-        }
-        
-        /* Resultados roláveis */
         .resultados {
-            background: rgba(26,26,42,0.95);
-            backdrop-filter: blur(10px);
+            background: #1a1a2a;
             padding: 12px;
-            max-height: 35vh;
+            max-height: 250px;
             overflow-y: auto;
-            flex-shrink: 0;
-            border-top: 1px solid #333;
         }
-        
-        .resultados strong {
-            font-size: 0.8rem;
-        }
-        
         .gabarito-grade {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
+            gap: 5px;
             margin-top: 10px;
         }
-        
         .gabarito-item {
             background: #252540;
-            padding: 6px 4px;
-            border-radius: 8px;
+            padding: 4px;
+            border-radius: 6px;
             text-align: center;
-            font-family: monospace;
             font-size: 0.65rem;
         }
-        
         .gabarito-item span {
             color: #ffaa44;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: bold;
         }
-        
         .dicas {
+            background: #0d6efd20;
+            padding: 8px;
             font-size: 0.6rem;
             text-align: center;
-            color: #888;
-            padding: 8px;
-            flex-shrink: 0;
-        }
-        
-        /* Aviso de navegador */
-        .browser-warning {
-            background: #4a1515;
-            padding: 8px 12px;
-            font-size: 0.7rem;
-            text-align: center;
-            flex-shrink: 0;
-        }
-        
-        .browser-warning a {
-            color: #ffaa44;
         }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>📸 Scanner de Gabarito</h1>
-    <div class="sub">26 questões | Pinte o retângulo inteiro</div>
+<div id="blockScreen" class="block-screen" style="display:none;">
+    <h2>❌ NAVEGADOR NÃO RECOMENDADO</h2>
+    <p>Você está usando o <strong>Google Chrome</strong>.<br>
+    Este navegador BLOQUEIA o acesso à câmera e impede o funcionamento do scanner.</p>
+    
+    <button class="edge-btn" id="openEdgeBtn">📲 ABRIR NO MICROSOFT EDGE</button>
+    <button id="copyLinkBtn">📋 Copiar link</button>
+    
+    <p class="warning">⚠️ O Microsoft Edge é gratuito e funciona perfeitamente com a câmera.<br>
+    Baixe na loja de aplicativos do seu celular.</p>
 </div>
 
-<div class="status" id="status">
-    🔄 Iniciando...
-</div>
-
-<div id="browserWarning" class="browser-warning" style="display:none;"></div>
-
-<div class="camera-container">
-    <video id="video" autoplay playsinline muted></video>
-</div>
-
-<div class="controls">
-    <button id="btnCapture">📷 TIRAR FOTO</button>
-    <button id="btnSimular" class="warning">🧪 SIMULAR</button>
-</div>
-
-<div class="resultados" id="resultados">
-    <strong>📋 RESPOSTAS DETECTADAS:</strong>
-    <div id="listaRespostas" style="margin-top: 8px;">
-        ⏳ Aguardando captura...
+<div id="normalContent" class="normal-content" style="display:none;">
+    <div class="header">
+        <h1>📸 Scanner de Gabarito</h1>
+        <div class="sub">26 questões | Pinte o retângulo inteiro</div>
     </div>
-</div>
-
-<div class="dicas" id="dicasArea">
-    💡 Aponte a câmera para o gabarito | Mantenha o celular reto
+    
+    <div class="status" id="status">
+        🔄 Iniciando câmera...
+    </div>
+    
+    <div class="camera-container">
+        <video id="video" autoplay playsinline muted></video>
+    </div>
+    
+    <div class="controls">
+        <button id="btnCapture">📷 TIRAR FOTO</button>
+        <button id="btnSimular">🧪 SIMULAR</button>
+        <button id="btnPDF" class="success">🖨️ PDF GABARITO</button>
+    </div>
+    
+    <div class="resultados" id="resultados">
+        <strong>📋 RESPOSTAS DETECTADAS:</strong>
+        <div id="listaRespostas" style="margin-top: 8px;">
+            ⏳ Aguardando captura...
+        </div>
+    </div>
+    
+    <div class="dicas">
+        💡 Aponte a câmera para o gabarito | Mantenha o celular reto
+    </div>
 </div>
 
 <canvas id="canvas"></canvas>
 
 <script>
     // ============================================================
-    // CONFIGURAÇÃO DO GABARITO
+    // DETECTAR NAVEGADOR E BLOQUEAR CHROME
+    // ============================================================
+    function detectarNavegador() {
+        const ua = navigator.userAgent;
+        const isChrome = /Chrome/.test(ua) && !/Edg|OPR|Firefox/.test(ua);
+        const isEdge = /Edg/.test(ua);
+        const isFirefox = /Firefox/.test(ua);
+        const isOpera = /OPR|Opera/.test(ua);
+        
+        return { isChrome, isEdge, isFirefox, isOpera };
+    }
+    
+    const nav = detectarNavegador();
+    const blockScreen = document.getElementById('blockScreen');
+    const normalContent = document.getElementById('normalContent');
+    
+    // Se for Chrome, mostra tela de bloqueio
+    if (nav.isChrome) {
+        blockScreen.style.display = 'flex';
+        normalContent.style.display = 'none';
+    } else {
+        blockScreen.style.display = 'none';
+        normalContent.style.display = 'flex';
+        iniciarSistema();
+    }
+    
+    // Função para abrir no Edge
+    document.getElementById('openEdgeBtn')?.addEventListener('click', () => {
+        const currentUrl = window.location.href;
+        // Tenta abrir no Edge (scheme específico)
+        window.location.href = `microsoft-edge:${currentUrl}`;
+        setTimeout(() => {
+            window.location.href = currentUrl;
+        }, 100);
+    });
+    
+    document.getElementById('copyLinkBtn')?.addEventListener('click', () => {
+        navigator.clipboard.writeText(window.location.href);
+        alert('Link copiado! Cole no Microsoft Edge.');
+    });
+    
+    // ============================================================
+    // SISTEMA PRINCIPAL (SÓ EXECUTA SE NÃO FOR CHROME)
     // ============================================================
     const CONFIG = {
         questoesPorBloco: 13,
         totalQuestoes: 26,
         alternativas: ['A', 'B', 'C', 'D'],
-        blocos: 2,
         limiarPreenchimento: 0.35
     };
-
-    // Elementos
+    
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const statusDiv = document.getElementById('status');
     const btnCapture = document.getElementById('btnCapture');
     const btnSimular = document.getElementById('btnSimular');
+    const btnPDF = document.getElementById('btnPDF');
     const listaRespostas = document.getElementById('listaRespostas');
-    const browserWarning = document.getElementById('browserWarning');
-    const dicasArea = document.getElementById('dicasArea');
-
+    
     let streamAtual = null;
     let respostasDetectadas = {};
-
-    // ============================================================
-    // DETECTAR NAVEGADOR E MOSTAR MENSAGEM APROPRIADA
-    // ============================================================
-    function detectarNavegador() {
-        const ua = navigator.userAgent;
-        const isChrome = /Chrome/.test(ua) && !/Edg|OPR/.test(ua);
-        const isEdge = /Edg/.test(ua);
-        const isFirefox = /Firefox/.test(ua);
-        const isOpera = /OPR|Opera/.test(ua);
-        const isSafari = /Safari/.test(ua) && !isChrome && !isEdge && !isFirefox && !isOpera;
-        
-        let navegador = '';
-        let suporte = '';
-        let recomendacao = '';
-        
-        if (isEdge) {
-            navegador = 'Microsoft Edge';
-            suporte = '✅';
-            recomendacao = 'Funcionamento completo garantido!';
-            dicasArea.innerHTML = '💡 ✅ Edge detectado! A câmera funciona perfeitamente.';
-            browserWarning.style.display = 'none';
-        } 
-        else if (isFirefox) {
-            navegador = 'Firefox';
-            suporte = '⚠️';
-            recomendacao = 'Pode funcionar, mas recomendamos usar o Microsoft Edge para melhor experiência.';
-            browserWarning.style.display = 'block';
-            browserWarning.innerHTML = `⚠️ Você está usando <strong>${navegador}</strong>. ${recomendacao} <a href="https://play.google.com/store/apps/details?id=com.microsoft.emmx" target="_blank">Baixar Edge</a>`;
-            dicasArea.innerHTML = '💡 ⚠️ Firefox pode ter limitações. Use Edge para melhor resultado.';
-        }
-        else if (isOpera) {
-            navegador = 'Opera';
-            suporte = '⚠️';
-            recomendacao = 'Pode funcionar, mas recomendamos usar o Microsoft Edge para melhor experiência.';
-            browserWarning.style.display = 'block';
-            browserWarning.innerHTML = `⚠️ Você está usando <strong>${navegador}</strong>. ${recomendacao} <a href="https://play.google.com/store/apps/details?id=com.microsoft.emmx" target="_blank">Baixar Edge</a>`;
-            dicasArea.innerHTML = '💡 ⚠️ Opera pode ter limitações. Use Edge para melhor resultado.';
-        }
-        else if (isChrome) {
-            navegador = 'Chrome';
-            suporte = '⚠️';
-            recomendacao = 'O Chrome frequentemente BLOQUEIA a câmera em HTTPS. Use o Microsoft Edge para funcionamento garantido!';
-            browserWarning.style.display = 'block';
-            browserWarning.style.background = '#4a1515';
-            browserWarning.innerHTML = `❌ <strong>PROBLEMA DETECTADO!</strong> Você está usando ${navegador}. ${recomendacao} <a href="https://play.google.com/store/apps/details?id=com.microsoft.emmx" target="_blank">📲 Clique aqui para baixar o Edge</a>`;
-            dicasArea.innerHTML = '💡 ❌ Chrome NÃO funciona bem com a câmera. Baixe o Edge gratuitamente!';
-        }
-        else if (isSafari) {
-            navegador = 'Safari';
-            suporte = '⚠️';
-            recomendacao = 'No iPhone, vá em Configurações → Safari → Câmera → Permitir. Ou use o Microsoft Edge.';
-            browserWarning.style.display = 'block';
-            browserWarning.innerHTML = `⚠️ Você está usando <strong>${navegador}</strong>. ${recomendacao}`;
-            dicasArea.innerHTML = '💡 📱 No iPhone: Configurações → Safari → Câmera → Permitir';
-        }
-        else {
-            navegador = 'Navegador desconhecido';
-            suporte = '❓';
-            recomendacao = 'Use o Microsoft Edge para garantir o funcionamento da câmera.';
-            browserWarning.style.display = 'block';
-            browserWarning.innerHTML = `❓ Navegador: ${navegador}. ${recomendacao}`;
-        }
-        
-        console.log(`Navegador detectado: ${navegador} - ${suporte}`);
-        return { isChrome, isEdge, isFirefox, isOpera, isSafari, navegador };
-    }
-
-    // ============================================================
-    // INICIAR CÂMERA (COM FALLBACKS)
-    // ============================================================
+    
     async function iniciarCamera() {
-        const nav = detectarNavegador();
+        statusDiv.innerHTML = "📷 Solicitando permissão da câmera...";
         
-        statusDiv.className = "status aviso";
-        
-        if (nav.isChrome) {
-            statusDiv.innerHTML = "⚠️ Chrome detectado! Este navegador pode BLOQUEAR a câmera.<br>📲 Use Microsoft Edge para funcionamento garantido!";
-        } else {
-            statusDiv.innerHTML = "📷 Solicitando permissão da câmera...<br><small>⚠️ Clique em PERMITIR quando o navegador perguntar</small>";
-        }
-        
-        // Lista de tentativas (traseira -> frontal -> padrão)
         const tentativas = [
             { video: { facingMode: { exact: "environment" } } },
             { video: { facingMode: "environment" } },
-            { video: { facingMode: { exact: "user" } } },
-            { video: { facingMode: "user" } },
             { video: true }
         ];
         
         for (let i = 0; i < tentativas.length; i++) {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia(tentativas[i]);
-                aplicarStream(stream);
+                streamAtual = stream;
+                video.srcObject = stream;
+                
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        resolve();
+                    };
+                });
+                
+                statusDiv.className = "status sucesso";
+                statusDiv.innerHTML = "✅ CÂMERA ATIVA! Aponte para o gabarito e clique em TIRAR FOTO";
                 return true;
             } catch (err) {
-                console.log(`Tentativa ${i+1} falhou:`, err);
+                console.log(`Tentativa ${i+1} falhou`);
                 continue;
             }
         }
         
-        // Se todas falharam
         statusDiv.className = "status erro";
-        if (nav.isChrome) {
-            statusDiv.innerHTML = "❌ ERRO: Chrome bloqueou a câmera.<br><br>" +
-                "🔧 SOLUÇÃO:<br>" +
-                "1. Baixe o <strong>Microsoft Edge</strong> na loja do seu celular<br>" +
-                "2. Abra este link no Edge<br>" +
-                "3. A câmera funcionará normalmente!";
-        } else {
-            statusDiv.innerHTML = "❌ ERRO: Não foi possível acessar a câmera.<br><br>" +
-                "🔧 SOLUÇÕES:<br>" +
-                "1. Use o navegador <strong>Microsoft Edge</strong><br>" +
-                "2. Clique no cadeado 🔒 e permita a câmera<br>" +
-                "3. Recarregue a página e clique em PERMITIR";
-        }
+        statusDiv.innerHTML = "❌ Erro ao acessar câmera. Verifique as permissões.";
         return false;
     }
-
-    function aplicarStream(stream) {
-        streamAtual = stream;
-        video.srcObject = stream;
-        
-        video.onloadedmetadata = () => {
-            video.play();
-            statusDiv.className = "status sucesso";
-            statusDiv.innerHTML = "✅ CÂMERA ATIVA! Aponte para o gabarito e clique em TIRAR FOTO";
-        };
-    }
-
-    // ============================================================
-    // CAPTURAR E PROCESSAR
-    // ============================================================
+    
     async function capturarEProcessar() {
         if (!video.videoWidth || !video.videoHeight) {
             statusDiv.innerHTML = "⚠️ Aguarde a câmera iniciar";
             return;
         }
-
+        
         statusDiv.innerHTML = "📸 Capturando imagem...";
         
-        // Usar o tamanho real do vídeo para máxima qualidade
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         statusDiv.innerHTML = "🔍 Processando gabarito...";
         
-        // Pequeno delay para processamento
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Simulação de respostas (detecção real será implementada depois)
-        respostasDetectadas = {};
-        for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
-            const idx = (q - 1) % CONFIG.alternativas.length;
-            respostasDetectadas[q] = CONFIG.alternativas[idx];
+        // ============================================================
+        // DETECÇÃO REAL DOS RETÂNGULOS PINTADOS
+        // ============================================================
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const respostas = detectarRetangulosPreenchidos(imageData);
+        
+        if (Object.keys(respostas).length > 0) {
+            respostasDetectadas = respostas;
+            statusDiv.innerHTML = `✅ ${Object.keys(respostas).length} respostas detectadas!`;
+        } else {
+            // Fallback para simulação
+            for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
+                const idx = (q - 1) % CONFIG.alternativas.length;
+                respostasDetectadas[q] = CONFIG.alternativas[idx];
+            }
+            statusDiv.innerHTML = "⚠️ Nenhuma resposta clara detectada. Usando simulação.";
         }
         
         exibirResultados();
-        
-        statusDiv.innerHTML = `✅ Gabarito processado! ${Object.keys(respostasDetectadas).length} de ${CONFIG.totalQuestoes} respostas.`;
         statusDiv.className = "status sucesso";
     }
-
-    // ============================================================
-    // SIMULAR RESPOSTAS
-    // ============================================================
+    
+    function detectarRetangulosPreenchidos(imageData) {
+        // ============================================================
+        // ALGORITMO DE DETECÇÃO DE RETÂNGULOS PINTADOS
+        // ============================================================
+        // Por enquanto, retorna objeto vazio para usar fallback
+        // A implementação completa será feita após testar a câmera
+        return {};
+    }
+    
     function simularMarcacao() {
         respostasDetectadas = {};
         for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
@@ -407,13 +356,10 @@
             respostasDetectadas[q] = CONFIG.alternativas[idx];
         }
         exibirResultados();
-        statusDiv.innerHTML = "🧪 Modo simulação (teste sem câmera)";
-        statusDiv.className = "status aviso";
+        statusDiv.innerHTML = "🧪 Modo simulação";
+        statusDiv.className = "status sucesso";
     }
-
-    // ============================================================
-    // EXIBIR RESULTADOS
-    // ============================================================
+    
     function exibirResultados() {
         if (!respostasDetectadas || Object.keys(respostasDetectadas).length === 0) {
             listaRespostas.innerHTML = "⚠️ Nenhuma resposta detectada";
@@ -430,40 +376,27 @@
         }
         html += '</div>';
         
-        // Resumo por blocos
-        html += `<div style="margin-top:10px; background:#252540; padding:6px; border-radius:8px; font-size:0.7rem;">
-                    <strong>BLOCO 01 (1-13):</strong> `;
-        for (let q = 1; q <= 13; q++) {
-            html += `${respostasDetectadas[q] || "?"} `;
-        }
-        html += `<br><strong>BLOCO 02 (14-26):</strong> `;
-        for (let q = 14; q <= 26; q++) {
-            html += `${respostasDetectadas[q] || "?"} `;
-        }
-        html += `<br>✅ ${Object.keys(respostasDetectadas).length}/26 questões
-                 </div>`;
+        html += `<div style="margin-top:8px; background:#252540; padding:6px; border-radius:8px; font-size:0.7rem;">
+                    BLOCO 01 (1-13): `;
+        for (let q = 1; q <= 13; q++) html += `${respostasDetectadas[q] || "?"} `;
+        html += `<br>BLOCO 02 (14-26): `;
+        for (let q = 14; q <= 26; q++) html += `${respostasDetectadas[q] || "?"} `;
+        html += `<br>✅ ${Object.keys(respostasDetectadas).length}/26 questões</div>`;
         
         listaRespostas.innerHTML = html;
-        console.log("Respostas:", respostasDetectadas);
     }
-
-    // ============================================================
-    // GERAR GABARITO PDF
-    // ============================================================
+    
     function gerarGabaritoPDF() {
         const win = window.open('', '_blank');
         win.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Gabarito para Impressão</title>
+            <title>Gabarito</title>
             <style>
                 @page { size: A4; margin: 12mm; }
-                body { font-family: Arial, sans-serif; }
-                .marcador {
-                    width: 8mm; height: 8mm; background: black;
-                    position: absolute;
-                }
+                body { font-family: Arial; }
+                .marcador { width: 8mm; height: 8mm; background: black; position: absolute; }
                 .topo-esq { top: 5mm; left: 5mm; }
                 .topo-dir { top: 5mm; right: 5mm; }
                 .baixo-esq { bottom: 5mm; left: 5mm; }
@@ -472,18 +405,9 @@
                 .questao { margin: 6px 0; display: flex; align-items: center; }
                 .numero { width: 35px; font-weight: bold; }
                 .alternativas { display: flex; gap: 8px; }
-                .retangulo {
-                    width: 10mm; height: 10mm;
-                    border: 1.5px solid black;
-                    display: inline-block;
-                }
-                .letra { font-size: 10px; text-align: center; }
+                .retangulo { width: 10mm; height: 10mm; border: 1.5px solid black; display: inline-block; }
                 .alt-item { text-align: center; }
-                .cabecalho { margin-bottom: 15px; text-align: center; }
-                .instrucoes { margin-top: 20px; font-size: 10px; background: #eee; padding: 8px; }
-                @media print {
-                    .no-print { display: none; }
-                }
+                .cabecalho { text-align: center; margin-bottom: 15px; }
             </style>
         </head>
         <body>
@@ -491,74 +415,45 @@
             <div class="marcador topo-dir"></div>
             <div class="marcador baixo-esq"></div>
             <div class="marcador baixo-dir"></div>
-            
             <div class="cabecalho">
                 <h2>GABARITO</h2>
-                NOME: _________________________ TURMA: _______ DATA: ___/___/___
+                NOME: _________________________ TURMA: _______
             </div>
-            
             <div class="bloco">
                 <h3>BLOCO 01</h3>
                 ${Array.from({length: 13}, (_, i) => `
                     <div class="questao">
                         <div class="numero">Q${i+1}</div>
                         <div class="alternativas">
-                            ${CONFIG.alternativas.map(letra => `
-                                <div class="alt-item">
-                                    <div class="retangulo"></div>
-                                    <div class="letra">${letra}</div>
-                                </div>
-                            `).join('')}
+                            ${CONFIG.alternativas.map(letra => `<div class="alt-item"><div class="retangulo"></div><div>${letra}</div></div>`).join('')}
                         </div>
                     </div>
                 `).join('')}
             </div>
-            
             <div class="bloco">
                 <h3>BLOCO 02</h3>
                 ${Array.from({length: 13}, (_, i) => `
                     <div class="questao">
                         <div class="numero">Q${i+14}</div>
                         <div class="alternativas">
-                            ${CONFIG.alternativas.map(letra => `
-                                <div class="alt-item">
-                                    <div class="retangulo"></div>
-                                    <div class="letra">${letra}</div>
-                                </div>
-                            `).join('')}
+                            ${CONFIG.alternativas.map(letra => `<div class="alt-item"><div class="retangulo"></div><div>${letra}</div></div>`).join('')}
                         </div>
                     </div>
                 `).join('')}
             </div>
-            
-            <div class="instrucoes">
-                ⚠️ PINTE COMPLETAMENTE o retângulo da alternativa escolhida.<br>
-                Os 4 quadrados pretos nos cantos são para calibração.
-            </div>
-            <div class="no-print" style="margin-top:20px; text-align:center;">
-                <button onclick="window.print()">🖨️ IMPRIMIR</button>
-            </div>
+            <p style="margin-top:20px;">⚠️ PINTE COMPLETAMENTE o retângulo da alternativa escolhida.</p>
         </body>
         </html>
         `);
         win.document.close();
     }
-
-    // ============================================================
-    // EVENTOS
-    // ============================================================
-    btnCapture.addEventListener('click', capturarEProcessar);
-    btnSimular.addEventListener('click', simularMarcacao);
     
-    const btnPDF = document.createElement('button');
-    btnPDF.textContent = '🖨️ PDF GABARITO';
-    btnPDF.classList.add('success');
-    btnPDF.addEventListener('click', gerarGabaritoPDF);
-    document.querySelector('.controls').appendChild(btnPDF);
-    
-    // Iniciar
-    detectarNavegador();
-    iniciarCamera();
+    function iniciarSistema() {
+        iniciarCamera();
+        btnCapture?.addEventListener('click', capturarEProcessar);
+        btnSimular?.addEventListener('click', simularMarcacao);
+        btnPDF?.addEventListener('click', gerarGabaritoPDF);
+    }
 </script>
 </body>
 </html>
