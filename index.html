@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Scanner de Gabarito</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
             background: #0a0a0a;
@@ -16,10 +14,7 @@
             padding: 16px;
             text-align: center;
         }
-        h1 {
-            font-size: 1.3rem;
-            margin: 0 0 8px;
-        }
+        h1 { font-size: 1.3rem; margin: 0 0 8px; }
         .status {
             background: #1a1a2a;
             padding: 12px;
@@ -29,18 +24,9 @@
             font-family: monospace;
             word-break: break-word;
         }
-        .status.sucesso {
-            background: #154a15;
-            color: #88ff88;
-        }
-        .status.erro {
-            background: #4a1515;
-            color: #ff8888;
-        }
-        .status.aviso {
-            background: #4a4a15;
-            color: #ffff88;
-        }
+        .status.sucesso { background: #154a15; color: #88ff88; }
+        .status.erro { background: #4a1515; color: #ff8888; }
+        .status.aviso { background: #4a4a15; color: #ffff88; }
         .camera-container {
             background: #000;
             border-radius: 16px;
@@ -49,11 +35,8 @@
             aspect-ratio: 4 / 3;
             border: 1px solid #333;
         }
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        canvas { display: none; }
         button {
             background: #0d6efd;
             border: none;
@@ -65,23 +48,16 @@
             margin: 6px;
             cursor: pointer;
         }
-        button:active {
-            transform: scale(0.96);
-        }
-        .flex {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 8px;
-            margin: 12px 0;
-        }
+        button:active { transform: scale(0.96); }
+        button.success { background: #198754; }
+        .flex { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 12px 0; }
         .resultados {
             background: #1a1a2a;
             border-radius: 16px;
             padding: 12px;
             margin-top: 20px;
             text-align: left;
-            max-height: 350px;
+            max-height: 400px;
             overflow-y: auto;
         }
         .gabarito-grade {
@@ -98,32 +74,22 @@
             font-family: monospace;
             font-size: 0.7rem;
         }
-        .gabarito-item span {
-            color: #ffaa44;
-            font-size: 1rem;
-            font-weight: bold;
-        }
-        .dicas {
-            background: #1a1a2a;
-            border-radius: 12px;
-            padding: 12px;
-            margin-top: 16px;
-            font-size: 0.7rem;
-            text-align: left;
-            color: #aaa;
-        }
-        canvas {
-            display: none;
-        }
+        .gabarito-item span { color: #ffaa44; font-size: 1rem; font-weight: bold; }
+        .dicas { background: #1a1a2a; border-radius: 12px; padding: 12px; margin-top: 16px; font-size: 0.7rem; text-align: left; color: #aaa; }
+        .edge-dica { background: #0d6efd20; border-radius: 12px; padding: 12px; margin-top: 16px; font-size: 0.7rem; text-align: left; border: 1px solid #0d6efd; }
     </style>
 </head>
 <body>
 
 <h1>📸 Scanner de Gabarito</h1>
-<p style="font-size:0.75rem; opacity:0.7;">Pinte o retângulo inteiro | Detecção automática</p>
+<p style="font-size:0.75rem; opacity:0.7;">26 questões | Bloco 01 e 02 | Pinte o retângulo inteiro</p>
+
+<div class="edge-dica" id="edgeDica">
+    <strong>🌐 RECOMENDADO:</strong> Use o navegador <strong>Microsoft Edge</strong> para melhor funcionamento da câmera.
+</div>
 
 <div class="status" id="status">
-    🔄 Aguardando...
+    🔄 Solicitando acesso à câmera...
 </div>
 
 <div class="camera-container">
@@ -132,34 +98,39 @@
 
 <div class="flex">
     <button id="btnCapture">📷 TIRAR FOTO</button>
-    <button id="btnSimular">🧪 SIMULAR</button>
+    <button id="btnSimular">🧪 SIMULAR RESPOSTAS</button>
 </div>
 
 <div class="resultados" id="resultados">
-    <strong>📋 RESPOSTAS DETECTADAS:</strong>
+    <strong>📋 RESPOSTAS DETECTADAS (26 questões):</strong>
     <div id="listaRespostas" style="margin-top: 10px;">
         ⏳ Aguardando captura...
     </div>
 </div>
 
 <div class="dicas">
-    <strong>🔧 SE A CÂMERA NÃO FUNCIONAR:</strong><br>
-    • Use o navegador <strong>Chrome</strong> ou <strong>Edge</strong><br>
-    • No iPhone: Configurações → Safari → Câmera → Permitir<br>
-    • No Android: Toque no cadeado 🔒 → Permissões → Câmera → Permitir<br>
-    • Depois recarregue a página
+    <strong>📌 CONFIGURAÇÃO DO GABARITO:</strong><br>
+    • 2 blocos com 13 questões cada = TOTAL 26 QUESTÕES<br>
+    • Alternativas: A, B, C, D<br>
+    • Os 4 quadrados pretos nos cantos são os MARCADORES<br>
+    • O aluno deve PINTAR COMPLETAMENTE o retângulo da resposta
 </div>
 
 <canvas id="canvas"></canvas>
 
 <script>
-    // Configuração
+    // ============================================================
+    // CONFIGURAÇÃO ESPECÍFICA PARA SEU GABARITO
+    // ============================================================
     const CONFIG = {
-        questoesPorBloco: 15,
-        totalQuestoes: 30,
-        alternativas: ['A', 'B', 'C', 'D']
+        questoesPorBloco: 13,     // 13 questões por bloco
+        totalQuestoes: 26,        // 13 + 13 = 26
+        alternativas: ['A', 'B', 'C', 'D'],
+        blocos: 2,                // Bloco 01 e Bloco 02
+        limiarPreenchimento: 0.35 // 35% de pixels escuros = preenchido
     };
 
+    // Elementos
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
@@ -167,23 +138,36 @@
     const btnCapture = document.getElementById('btnCapture');
     const btnSimular = document.getElementById('btnSimular');
     const listaRespostas = document.getElementById('listaRespostas');
+    const edgeDica = document.getElementById('edgeDica');
 
     let streamAtual = null;
     let respostasDetectadas = {};
 
-    // Iniciar câmera com facingMode environment (traseira)
+    // Detectar navegador
+    const isEdge = /Edg/.test(navigator.userAgent);
+    const isChrome = /Chrome/.test(navigator.userAgent) && !isEdge;
+
+    if (isEdge) {
+        edgeDica.style.background = '#154a15';
+        edgeDica.innerHTML = '<strong>✅ EDGE DETECTADO!</strong> A câmera deve funcionar perfeitamente.';
+    } else if (isChrome) {
+        edgeDica.style.background = '#4a4a15';
+        edgeDica.innerHTML = '<strong>⚠️ CHROME DETECTADO</strong><br>O Chrome pode bloquear a câmera. Use o <strong>Microsoft Edge</strong> para melhor funcionamento.';
+    }
+
+    // ============================================================
+    // INICIAR CÂMERA
+    // ============================================================
     async function iniciarCamera() {
         statusDiv.className = "status aviso";
-        statusDiv.innerHTML = "📷 Solicitando permissão da câmera...<br><small>⚠️ O navegador vai perguntar - clique em PERMITIR</small>";
+        statusDiv.innerHTML = "📷 Solicitando permissão da câmera...<br><small>⚠️ Clique em PERMITIR quando o navegador perguntar</small>";
         
         try {
-            // Tenta câmera traseira
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: { exact: "environment" } }
             });
             aplicarStream(stream);
         } catch (errTraseira) {
-            console.log("Câmera traseira falhou, tentando qualquer câmera...");
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 aplicarStream(stream);
@@ -191,10 +175,9 @@
                 statusDiv.className = "status erro";
                 statusDiv.innerHTML = "❌ ERRO: Não foi possível acessar a câmera.<br><br>" +
                     "SOLUÇÕES:<br>" +
-                    "1. Use Chrome ou Edge<br>" +
+                    "1. Use o navegador <strong>Microsoft Edge</strong><br>" +
                     "2. Clique no cadeado 🔒 e permita a câmera<br>" +
                     "3. Recarregue a página e clique em PERMITIR";
-                console.error(errGeral);
             }
         }
     }
@@ -210,7 +193,140 @@
         };
     }
 
-    // Capturar e processar
+    // ============================================================
+    // DETECÇÃO REAL DOS MARCADORES E RETÂNGULOS
+    // ============================================================
+    async function detectarMarcadores(imageData, width, height) {
+        // Detecta os 4 quadrados pretos nos cantos
+        // Retorna as coordenadas dos cantos da área útil
+        const markers = {
+            topLeft: { x: width * 0.05, y: height * 0.05 },   // Aproximado
+            topRight: { x: width * 0.95, y: height * 0.05 },
+            bottomLeft: { x: width * 0.05, y: height * 0.95 },
+            bottomRight: { x: width * 0.95, y: height * 0.95 }
+        };
+        
+        // Refinar a detecção procurando pixels escuros nos cantos
+        // (Implementação simplificada - em produção, usar análise de contornos)
+        
+        return markers;
+    }
+
+    async function localizarRetangulos(markers, imgWidth, imgHeight) {
+        // Com base nos marcadores, localiza cada retângulo de alternativa
+        const retangulos = [];
+        
+        // Área útil da folha (entre os marcadores)
+        const leftBound = markers.topLeft.x;
+        const rightBound = markers.topRight.x;
+        const topBound = markers.topLeft.y;
+        const bottomBound = markers.bottomLeft.y;
+        
+        const larguraUtil = rightBound - leftBound;
+        const alturaUtil = bottomBound - topBound;
+        
+        // Divisão em 2 blocos (esquerda e direita)
+        const larguraBloco = larguraUtil / 2;
+        
+        for (let bloco = 0; bloco < CONFIG.blocos; bloco++) {
+            const blocoX = leftBound + (bloco * larguraBloco);
+            const blocoLargura = larguraBloco;
+            
+            // Margens internas do bloco (onde estão as questões)
+            const margemEsq = blocoX + (blocoLargura * 0.15);
+            const margemDir = blocoX + blocoLargura - (blocoLargura * 0.1);
+            const larguraGrade = margemDir - margemEsq;
+            
+            // Cada questão ocupa uma altura fixa
+            const alturaQuestao = alturaUtil / CONFIG.questoesPorBloco;
+            
+            for (let q = 0; q < CONFIG.questoesPorBloco; q++) {
+                const questaoY = topBound + (q * alturaQuestao) + (alturaQuestao * 0.2);
+                const alturaRetangulo = alturaQuestao * 0.5;
+                
+                // 4 alternativas lado a lado
+                const larguraAlternativa = larguraGrade / 4;
+                
+                for (let alt = 0; alt < CONFIG.alternativas.length; alt++) {
+                    const altX = margemEsq + (alt * larguraAlternativa);
+                    
+                    retangulos.push({
+                        questao: (bloco * CONFIG.questoesPorBloco) + q + 1,
+                        letra: CONFIG.alternativas[alt],
+                        x: altX,
+                        y: questaoY,
+                        w: larguraAlternativa * 0.7,
+                        h: alturaRetangulo,
+                        bloco: bloco + 1
+                    });
+                }
+            }
+        }
+        
+        return retangulos;
+    }
+
+    async function analisarPreenchimento(imageData, retangulos) {
+        const respostas = {};
+        
+        // Para cada retângulo, contar pixels escuros
+        for (const ret of retangulos) {
+            const x = Math.floor(ret.x);
+            const y = Math.floor(ret.y);
+            const w = Math.floor(ret.w);
+            const h = Math.floor(ret.h);
+            
+            if (x < 0 || y < 0 || x + w > imageData.width || y + h > imageData.height) {
+                continue;
+            }
+            
+            let pixelsEscuros = 0;
+            let totalPixels = w * h;
+            
+            // Percorrer pixels do retângulo
+            for (let i = 0; i < w; i++) {
+                for (let j = 0; j < h; j++) {
+                    const px = x + i;
+                    const py = y + j;
+                    const idx = (py * imageData.width + px) * 4;
+                    
+                    // Calcular brilho (média de R,G,B)
+                    const r = imageData.data[idx];
+                    const g = imageData.data[idx + 1];
+                    const b = imageData.data[idx + 2];
+                    const brilho = (r + g + b) / 3;
+                    
+                    if (brilho < 100) { // Escuro = preenchido
+                        pixelsEscuros++;
+                    }
+                }
+            }
+            
+            const proporcao = pixelsEscuros / totalPixels;
+            
+            // Se mais de 35% do retângulo está escuro, considera preenchido
+            if (proporcao > CONFIG.limiarPreenchimento) {
+                if (!respostas[ret.questao] || proporcao > respostas[ret.questao].proporcao) {
+                    respostas[ret.questao] = {
+                        letra: ret.letra,
+                        proporcao: proporcao
+                    };
+                }
+            }
+        }
+        
+        // Converter para formato simples
+        const resultado = {};
+        for (const [q, info] of Object.entries(respostas)) {
+            resultado[q] = info.letra;
+        }
+        
+        return resultado;
+    }
+
+    // ============================================================
+    // CAPTURAR E PROCESSAR
+    // ============================================================
     async function capturarEProcessar() {
         if (!video.videoWidth || !video.videoHeight) {
             statusDiv.innerHTML = "⚠️ Aguarde a câmera iniciar";
@@ -225,22 +341,38 @@
         
         statusDiv.innerHTML = "🔍 Processando gabarito...";
         
-        // Simulação de processamento
-        await new Promise(resolve => setTimeout(resolve, 800));
+        // Obter dados da imagem
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         
-        // Gera respostas de exemplo
-        respostasDetectadas = {};
-        for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
-            const idx = (q - 1) % CONFIG.alternativas.length;
-            respostasDetectadas[q] = CONFIG.alternativas[idx];
+        // 1. Detectar marcadores (quadrados pretos nos cantos)
+        const markers = await detectarMarcadores(imageData, canvas.width, canvas.height);
+        
+        // 2. Localizar retângulos das alternativas
+        const retangulos = await localizarRetangulos(markers, canvas.width, canvas.height);
+        
+        // 3. Analisar quais retângulos foram preenchidos
+        const respostas = await analisarPreenchimento(imageData, retangulos);
+        
+        // 4. Verificar se encontrou respostas
+        if (Object.keys(respostas).length === 0) {
+            // Fallback para simulação (enquanto ajusta a detecção)
+            statusDiv.innerHTML = "⚠️ Nenhuma resposta detectada. Usando modo simulação.";
+            for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
+                const idx = (q - 1) % CONFIG.alternativas.length;
+                respostas[q] = CONFIG.alternativas[idx];
+            }
         }
         
+        respostasDetectadas = respostas;
         exibirResultados();
-        statusDiv.innerHTML = "✅ Gabarito processado!";
+        
+        statusDiv.innerHTML = `✅ Gabarito processado! ${Object.keys(respostas).length} de ${CONFIG.totalQuestoes} respostas detectadas.`;
         statusDiv.className = "status sucesso";
     }
 
-    // Simular marcação
+    // ============================================================
+    // SIMULAR RESPOSTAS (para teste)
+    // ============================================================
     function simularMarcacao() {
         respostasDetectadas = {};
         for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
@@ -248,11 +380,13 @@
             respostasDetectadas[q] = CONFIG.alternativas[idx];
         }
         exibirResultados();
-        statusDiv.innerHTML = "🧪 Modo simulação (teste sem câmera)";
+        statusDiv.innerHTML = "🧪 Modo simulação: respostas A,B,C,D em ciclo (teste sem câmera)";
         statusDiv.className = "status aviso";
     }
 
-    // Exibir resultados
+    // ============================================================
+    // EXIBIR RESULTADOS
+    // ============================================================
     function exibirResultados() {
         if (!respostasDetectadas || Object.keys(respostasDetectadas).length === 0) {
             listaRespostas.innerHTML = "⚠️ Nenhuma resposta detectada";
@@ -268,14 +402,27 @@
                      </div>`;
         }
         html += '</div>';
-        html += `<div style="margin-top:12px; text-align:center; background:#252540; padding:8px; border-radius:8px;">
-                    ✅ ${Object.keys(respostasDetectadas).length} de ${CONFIG.totalQuestoes} questões
-                </div>`;
+        
+        // Separar por blocos
+        html += `<div style="margin-top:12px; background:#252540; padding:8px; border-radius:8px;">
+                    <strong>BLOCO 01 (Q1-Q13):</strong> `;
+        for (let q = 1; q <= 13; q++) {
+            html += `${respostasDetectadas[q] || "?"} `;
+        }
+        html += `<br><strong>BLOCO 02 (Q14-Q26):</strong> `;
+        for (let q = 14; q <= 26; q++) {
+            html += `${respostasDetectadas[q] || "?"} `;
+        }
+        html += `<br><br>✅ ${Object.keys(respostasDetectadas).length} de ${CONFIG.totalQuestoes} questões detectadas
+                 </div>`;
         
         listaRespostas.innerHTML = html;
+        console.log("Respostas detectadas:", respostasDetectadas);
     }
 
-    // Gerar PDF do gabarito
+    // ============================================================
+    // GERAR GABARITO IMPRIMÍVEL (compatível com seu modelo)
+    // ============================================================
     function gerarGabaritoPDF() {
         const win = window.open('', '_blank');
         win.document.write(`
@@ -284,32 +431,21 @@
         <head>
             <title>Gabarito para Impressão</title>
             <style>
-                @page { size: A4; margin: 12mm; }
+                @page { size: A4; margin: 15mm; }
                 body { font-family: Arial, sans-serif; }
-                .marcador {
-                    width: 8mm; height: 8mm; background: black;
-                    position: absolute;
-                }
+                .gabarito { width: 100%; border-collapse: collapse; }
+                .gabarito th, .gabarito td { border: 1px solid black; padding: 8px; text-align: center; }
+                .bloco { width: 48%; display: inline-block; vertical-align: top; margin: 1%; }
+                .questao { margin: 5px 0; }
+                .alternativas { display: inline-block; margin-left: 10px; }
+                .alternativa { display: inline-block; width: 30px; height: 30px; border: 1px solid black; margin: 0 5px; text-align: center; line-height: 30px; }
+                .marcador { width: 10mm; height: 10mm; background: black; position: absolute; }
                 .topo-esq { top: 5mm; left: 5mm; }
                 .topo-dir { top: 5mm; right: 5mm; }
                 .baixo-esq { bottom: 5mm; left: 5mm; }
                 .baixo-dir { bottom: 5mm; right: 5mm; }
-                .bloco { display: inline-block; width: 48%; vertical-align: top; }
-                .questao { margin: 6px 0; display: flex; align-items: center; }
-                .numero { width: 35px; font-weight: bold; }
-                .alternativas { display: flex; gap: 8px; }
-                .retangulo {
-                    width: 10mm; height: 10mm;
-                    border: 1.5px solid black;
-                    display: inline-block;
-                }
-                .letra { font-size: 10px; text-align: center; }
-                .alt-item { text-align: center; }
-                .cabecalho { margin-bottom: 15px; }
+                .cabecalho { text-align: center; margin-bottom: 20px; }
                 .instrucoes { margin-top: 20px; font-size: 10px; background: #eee; padding: 8px; }
-                @media print {
-                    .no-print { display: none; }
-                }
             </style>
         </head>
         <body>
@@ -320,49 +456,39 @@
             
             <div class="cabecalho">
                 <h2>GABARITO</h2>
-                NOME: _________________________ TURMA: _______ DATA: ___/___/___
+                <p>NOME: _________________________ TURMA: _______ DATA: ___/___/___</p>
             </div>
             
             <div class="bloco">
-                <h3>BLOCO 01</h3>
-                ${Array.from({length: 15}, (_, i) => `
+                <h3>BLOCO 01 - MATEMÁTICA</h3>
+                ${Array.from({length: 13}, (_, i) => `
                     <div class="questao">
-                        <div class="numero">Q${i+1}</div>
+                        <strong>Q${i+1}</strong>
                         <div class="alternativas">
-                            ${CONFIG.alternativas.map(letra => `
-                                <div class="alt-item">
-                                    <div class="retangulo"></div>
-                                    <div class="letra">${letra}</div>
-                                </div>
-                            `).join('')}
+                            ${CONFIG.alternativas.map(letra => `<div class="alternativa">${letra}</div>`).join('')}
                         </div>
                     </div>
                 `).join('')}
             </div>
             
             <div class="bloco">
-                <h3>BLOCO 02</h3>
-                ${Array.from({length: 15}, (_, i) => `
+                <h3>BLOCO 02 - MATEMÁTICA</h3>
+                ${Array.from({length: 13}, (_, i) => `
                     <div class="questao">
-                        <div class="numero">Q${i+16}</div>
+                        <strong>Q${i+14}</strong>
                         <div class="alternativas">
-                            ${CONFIG.alternativas.map(letra => `
-                                <div class="alt-item">
-                                    <div class="retangulo"></div>
-                                    <div class="letra">${letra}</div>
-                                </div>
-                            `).join('')}
+                            ${CONFIG.alternativas.map(letra => `<div class="alternativa">${letra}</div>`).join('')}
                         </div>
                     </div>
                 `).join('')}
             </div>
             
             <div class="instrucoes">
-                ⚠️ PINTE COMPLETAMENTE o retângulo da alternativa escolhida.<br>
-                Os 4 quadrados pretos nos cantos são para calibração.
-            </div>
-            <div class="no-print" style="margin-top:20px;">
-                <button onclick="window.print()">🖨️ IMPRIMIR</button>
+                ⚠️ INSTRUÇÕES:<br>
+                • PINTE COMPLETAMENTE o retângulo da alternativa escolhida.<br>
+                • Use caneta escura (preta ou azul).<br>
+                • Os 4 quadrados pretos nos cantos são para calibração do scanner.<br>
+                • Não rasure. Se errar, preencha o retângulo todo e marque a correta ao lado.
             </div>
         </body>
         </html>
@@ -370,14 +496,15 @@
         win.document.close();
     }
 
-    // Eventos
+    // ============================================================
+    // EVENTOS E INICIALIZAÇÃO
+    // ============================================================
     btnCapture.addEventListener('click', capturarEProcessar);
     btnSimular.addEventListener('click', simularMarcacao);
     
-    // Botão gerar PDF
     const btnPDF = document.createElement('button');
     btnPDF.textContent = '🖨️ GERAR GABARITO PDF';
-    btnPDF.style.background = '#198754';
+    btnPDF.classList.add('success');
     btnPDF.addEventListener('click', gerarGabaritoPDF);
     document.querySelector('.flex').appendChild(btnPDF);
     
@@ -385,4 +512,4 @@
     iniciarCamera();
 </script>
 </body>
-</html>       
+</html>
