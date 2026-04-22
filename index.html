@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Scanner de Gabarito</title>
     <style>
         * {
@@ -12,7 +12,7 @@
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            background: #0a0a0a;
+            background: #000;
             color: #fff;
             min-height: 100vh;
             display: flex;
@@ -20,61 +20,26 @@
         }
         .header {
             background: #0a0a0a;
-            padding: 16px;
+            padding: 12px;
             text-align: center;
         }
-        h1 { font-size: 1.3rem; }
-        .sub { font-size: 0.7rem; opacity: 0.7; }
+        h1 { font-size: 1.2rem; }
+        .sub { font-size: 0.65rem; opacity: 0.7; }
         
-        .permission-panel {
-            background: #1a1a2a;
-            margin: 20px;
-            padding: 30px 20px;
-            border-radius: 20px;
-            text-align: center;
-        }
-        .permission-panel h2 {
-            color: #ffaa44;
-            margin-bottom: 15px;
-        }
-        .permission-panel p {
-            margin-bottom: 20px;
-            color: #ccc;
-            line-height: 1.5;
-        }
-        .btn-permission {
-            background: #0d6efd;
-            border: none;
-            color: white;
-            padding: 15px 30px;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin: 10px;
-        }
-        .btn-permission:active {
-            transform: scale(0.97);
-        }
-        
-        .camera-area {
-            display: none;
-            flex-direction: column;
-            flex: 1;
-        }
         .status {
             background: #1a1a2a;
-            padding: 10px;
-            font-size: 0.75rem;
+            padding: 8px;
+            font-size: 0.7rem;
             text-align: center;
         }
         .status.sucesso { background: #154a15; color: #88ff88; }
         .status.erro { background: #4a1515; color: #ff8888; }
+        .status.info { background: #0d6efd; }
         
         .camera-container {
             background: #000;
             flex: 1;
-            min-height: 300px;
+            min-height: 280px;
             position: relative;
         }
         video {
@@ -82,61 +47,69 @@
             height: 100%;
             object-fit: cover;
         }
-        canvas { display: none; }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
         
         .controls {
             background: #1a1a2a;
-            padding: 12px;
+            padding: 10px;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
         }
         button {
             background: #0d6efd;
             border: none;
             color: white;
-            padding: 12px 20px;
+            padding: 10px 20px;
             border-radius: 40px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: bold;
             cursor: pointer;
         }
+        button:active { transform: scale(0.97); }
         button.success { background: #198754; }
+        button.warning { background: #fd7e14; }
         
         .resultados {
             background: #1a1a2a;
-            padding: 12px;
-            max-height: 250px;
+            padding: 10px;
+            max-height: 200px;
             overflow-y: auto;
+            font-size: 0.7rem;
         }
         .gabarito-grade {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 5px;
-            margin-top: 10px;
+            gap: 4px;
+            margin-top: 8px;
         }
         .gabarito-item {
             background: #252540;
             padding: 4px;
             border-radius: 6px;
             text-align: center;
-            font-size: 0.65rem;
         }
         .gabarito-item span {
             color: #ffaa44;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: bold;
         }
-        .dicas {
-            background: #0d6efd20;
-            padding: 8px;
-            font-size: 0.6rem;
-            text-align: center;
+        .preview-canvas {
+            display: none;
         }
-        .btn-apk {
-            background: #e94560;
-            margin-top: 10px;
+        .debug-info {
+            font-size: 0.6rem;
+            color: #888;
+            text-align: center;
+            padding: 4px;
         }
     </style>
 </head>
@@ -147,182 +120,378 @@
     <div class="sub">26 questões | Pinte o retângulo inteiro</div>
 </div>
 
-<!-- Painel de permissão -->
-<div id="permissionPanel" class="permission-panel">
-    <h2>📷 Permissão da Câmera</h2>
-    <p>Para escanear o gabarito, o aplicativo precisa acessar sua câmera.<br>
-    Clique no botão abaixo e escolha <strong>"PERMITIR"</strong> quando o navegador perguntar.</p>
-    <button class="btn-permission" id="requestCameraBtn">🔓 PERMITIR ACESSO À CÂMERA</button>
-    <button class="btn-permission btn-apk" id="apkInfoBtn">📲 NÃO CONSIGO PERMITIR? CLIQUE AQUI</button>
+<div class="status" id="status">
+    🔄 Iniciando câmera...
 </div>
 
-<!-- Área da câmera (inicialmente escondida) -->
-<div id="cameraArea" class="camera-area">
-    <div class="status" id="status">
-        ⏳ Aguardando permissão...
-    </div>
-    
-    <div class="camera-container">
-        <video id="video" autoplay playsinline muted></video>
-    </div>
-    
-    <div class="controls">
-        <button id="btnCapture">📷 TIRAR FOTO</button>
-        <button id="btnSimular">🧪 SIMULAR</button>
-        <button id="btnPDF" class="success">🖨️ PDF GABARITO</button>
-    </div>
-    
-    <div class="resultados" id="resultados">
-        <strong>📋 RESPOSTAS DETECTADAS:</strong>
-        <div id="listaRespostas" style="margin-top: 8px;">
-            ⏳ Aguardando captura...
-        </div>
-    </div>
-    
-    <div class="dicas">
-        💡 Aponte a câmera para o gabarito | Mantenha o celular reto
+<div class="camera-container">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="overlayCanvas"></canvas>
+</div>
+
+<div class="controls">
+    <button id="btnCapture">📷 ESCANEAR GABARITO</button>
+    <button id="btnSimular" class="warning">🧪 SIMULAR</button>
+    <button id="btnPDF" class="success">🖨️ PDF GABARITO</button>
+</div>
+
+<div class="resultados" id="resultados">
+    <strong>📋 RESPOSTAS DETECTADAS:</strong>
+    <div id="listaRespostas" style="margin-top: 6px;">
+        ⏳ Aguardando escaneamento...
     </div>
 </div>
 
-<canvas id="canvas"></canvas>
+<div class="debug-info" id="debugInfo"></div>
+
+<canvas id="processingCanvas" class="preview-canvas"></canvas>
 
 <script>
     // ============================================================
-    // CONFIGURAÇÃO
+    // CONFIGURAÇÃO DO GABARITO
     // ============================================================
     const CONFIG = {
         questoesPorBloco: 13,
         totalQuestoes: 26,
-        alternativas: ['A', 'B', 'C', 'D']
+        alternativas: ['A', 'B', 'C', 'D'],
+        blocos: 2,
+        limiarPreenchimento: 0.28,  // 28% de pixels escuros = preenchido (ajustável)
+        debug: true
     };
     
     // Elementos
-    const permissionPanel = document.getElementById('permissionPanel');
-    const cameraArea = document.getElementById('cameraArea');
-    const requestBtn = document.getElementById('requestCameraBtn');
-    const apkInfoBtn = document.getElementById('apkInfoBtn');
     const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+    const overlayCanvas = document.getElementById('overlayCanvas');
+    const processingCanvas = document.getElementById('processingCanvas');
+    const ctxOverlay = overlayCanvas.getContext('2d');
+    const ctxProcessing = processingCanvas.getContext('2d');
     const statusDiv = document.getElementById('status');
     const btnCapture = document.getElementById('btnCapture');
     const btnSimular = document.getElementById('btnSimular');
     const btnPDF = document.getElementById('btnPDF');
     const listaRespostas = document.getElementById('listaRespostas');
+    const debugInfo = document.getElementById('debugInfo');
     
     let streamAtual = null;
     let respostasDetectadas = {};
     
     // ============================================================
-    // SOLICITAR PERMISSÃO DA CÂMERA (COM BOTÃO EXPLÍCITO)
+    // INICIAR CÂMERA
     // ============================================================
-    async function solicitarPermissaoCamera() {
+    async function iniciarCamera() {
         statusDiv.innerHTML = "📷 Solicitando permissão da câmera...";
-        statusDiv.className = "status";
         
         try {
-            // Tenta câmera traseira
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: { exact: "environment" } }
             });
-            cameraConectada(stream);
-            return true;
+            aplicarStream(stream);
         } catch (err) {
-            console.log("Traseira falhou:", err);
-            
             try {
-                // Tenta qualquer câmera
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                cameraConectada(stream);
-                return true;
+                aplicarStream(stream);
             } catch (err2) {
-                console.error("Erro final:", err2);
-                statusDiv.innerHTML = "❌ PERMISSÃO NEGADA!<br><br>Clique no cadeado 🔒 na barra de endereço e permita a câmera manualmente.";
                 statusDiv.className = "status erro";
-                return false;
+                statusDiv.innerHTML = "❌ Erro ao acessar câmera. Verifique as permissões.";
             }
         }
     }
     
-    function cameraConectada(stream) {
+    function aplicarStream(stream) {
         streamAtual = stream;
         video.srcObject = stream;
         
         video.onloadedmetadata = () => {
             video.play();
-            statusDiv.innerHTML = "✅ CÂMERA ATIVA! Aponte para o gabarito e clique em TIRAR FOTO";
-            statusDiv.className = "status sucesso";
             
-            // Esconde o painel de permissão e mostra a câmera
-            permissionPanel.style.display = 'none';
-            cameraArea.style.display = 'flex';
+            // Ajustar canvas overlay para o tamanho do vídeo
+            const resizeObserver = new ResizeObserver(() => {
+                if (video.videoWidth && video.videoHeight) {
+                    overlayCanvas.width = video.videoWidth;
+                    overlayCanvas.height = video.videoHeight;
+                    overlayCanvas.style.width = '100%';
+                    overlayCanvas.style.height = '100%';
+                    resizeObserver.disconnect();
+                }
+            });
+            resizeObserver.observe(video);
+            
+            statusDiv.className = "status sucesso";
+            statusDiv.innerHTML = "✅ CÂMERA ATIVA! Aponte para o gabarito e clique em ESCANEAR";
         };
     }
     
-    // Botão principal para pedir permissão
-    requestBtn.addEventListener('click', solicitarPermissaoCamera);
-    
-    // Botão de ajuda (APK)
-    apkInfoBtn.addEventListener('click', () => {
-        permissionPanel.innerHTML = `
-            <h2>📱 SOLUÇÃO DEFINITIVA</h2>
-            <p>Se a permissão da câmera não está aparecendo, instale o aplicativo nativo:</p>
-            <ol style="text-align:left; margin:15px 30px; color:#ccc;">
-                <li>1. Acesse <strong>www.pwabuilder.com</strong> no computador</li>
-                <li>2. Digite a URL: <strong>${window.location.href}</strong></li>
-                <li>3. Clique em "Build" → "Generate Package" → "Android"</li>
-                <li>4. Baixe e instale o arquivo .apk no celular</li>
-            </ol>
-            <p style="margin-top:15px;">O APK funciona SEM navegador e SEM problemas de permissão!</p>
-            <button class="btn-permission" id="voltarBtn">← VOLTAR</button>
-        `;
-        document.getElementById('voltarBtn')?.addEventListener('click', () => {
-            location.reload();
-        });
-    });
+    // ============================================================
+    // DETECÇÃO DOS MARCADORES PRETOS (CANTOS)
+    // ============================================================
+    function detectarMarcadores(imageData, width, height) {
+        // Procura por quadrados pretos nos cantos
+        const markers = {
+            topLeft: null,
+            topRight: null,
+            bottomLeft: null,
+            bottomRight: null
+        };
+        
+        // Áreas de busca nos cantos (10% da borda)
+        const searchSize = Math.min(width, height) * 0.08;
+        
+        // Função para encontrar o centro do quadrado preto em uma região
+        function encontrarMarcador(regiaoX, regiaoY, regiaoW, regiaoH) {
+            let totalX = 0, totalY = 0, pixelsPretos = 0;
+            
+            for (let y = regiaoY; y < regiaoY + regiaoH && y < height; y++) {
+                for (let x = regiaoX; x < regiaoX + regiaoW && x < width; x++) {
+                    const idx = (y * width + x) * 4;
+                    const brilho = (imageData.data[idx] + imageData.data[idx+1] + imageData.data[idx+2]) / 3;
+                    if (brilho < 80) { // Pixel escuro
+                        totalX += x;
+                        totalY += y;
+                        pixelsPretos++;
+                    }
+                }
+            }
+            
+            if (pixelsPretos > 50) {
+                return { x: totalX / pixelsPretos, y: totalY / pixelsPretos };
+            }
+            return null;
+        }
+        
+        // Buscar nos 4 cantos
+        markers.topLeft = encontrarMarcador(0, 0, searchSize, searchSize);
+        markers.topRight = encontrarMarcador(width - searchSize, 0, searchSize, searchSize);
+        markers.bottomLeft = encontrarMarcador(0, height - searchSize, searchSize, searchSize);
+        markers.bottomRight = encontrarMarcador(width - searchSize, height - searchSize, searchSize, searchSize);
+        
+        return markers;
+    }
     
     // ============================================================
-    // CAPTURAR E PROCESSAR
+    // LOCALIZAR RETÂNGULOS DAS ALTERNATIVAS
     // ============================================================
-    async function capturarEProcessar() {
+    function localizarRetangulos(markers, imgWidth, imgHeight) {
+        const retangulos = [];
+        
+        // Verificar se os marcadores foram encontrados
+        if (!markers.topLeft || !markers.topRight || !markers.bottomLeft || !markers.bottomRight) {
+            debugInfo.innerHTML = "⚠️ Marcadores não detectados. Certifique-se que os 4 quadrados pretos estão visíveis.";
+            return retangulos;
+        }
+        
+        // Área útil da folha (entre os marcadores)
+        const leftBound = markers.topLeft.x;
+        const rightBound = markers.topRight.x;
+        const topBound = markers.topLeft.y;
+        const bottomBound = markers.bottomLeft.y;
+        
+        const larguraUtil = rightBound - leftBound;
+        const alturaUtil = bottomBound - topBound;
+        
+        if (larguraUtil <= 0 || alturaUtil <= 0) return retangulos;
+        
+        // Divisão em 2 blocos
+        const larguraBloco = larguraUtil / 2;
+        
+        for (let bloco = 0; bloco < CONFIG.blocos; bloco++) {
+            const blocoX = leftBound + (bloco * larguraBloco);
+            
+            // Margens internas do bloco (onde estão as questões)
+            const margemEsq = blocoX + (larguraBloco * 0.12);
+            const margemDir = blocoX + larguraBloco - (larguraBloco * 0.08);
+            const larguraGrade = margemDir - margemEsq;
+            
+            // Altura de cada questão
+            const alturaQuestao = alturaUtil / CONFIG.questoesPorBloco;
+            
+            for (let q = 0; q < CONFIG.questoesPorBloco; q++) {
+                const questaoY = topBound + (q * alturaQuestao) + (alturaQuestao * 0.15);
+                const alturaRetangulo = alturaQuestao * 0.55;
+                
+                // Largura de cada alternativa
+                const larguraAlternativa = larguraGrade / 4;
+                
+                for (let alt = 0; alt < CONFIG.alternativas.length; alt++) {
+                    const altX = margemEsq + (alt * larguraAlternativa);
+                    const altCentroX = altX + (larguraAlternativa * 0.35);
+                    const altLargura = larguraAlternativa * 0.5;
+                    
+                    retangulos.push({
+                        questao: (bloco * CONFIG.questoesPorBloco) + q + 1,
+                        letra: CONFIG.alternativas[alt],
+                        x: altCentroX,
+                        y: questaoY,
+                        w: altLargura,
+                        h: alturaRetangulo,
+                        bloco: bloco + 1
+                    });
+                }
+            }
+        }
+        
+        debugInfo.innerHTML = `✅ ${retangulos.length} retângulos localizados (${CONFIG.totalQuestoes * 4} esperados)`;
+        return retangulos;
+    }
+    
+    // ============================================================
+    // ANALISAR PREENCHIMENTO DOS RETÂNGULOS
+    // ============================================================
+    function analisarPreenchimento(imageData, retangulos) {
+        const respostas = {};
+        const intensidadePorQuestao = {};
+        
+        for (const ret of retangulos) {
+            const x = Math.floor(ret.x);
+            const y = Math.floor(ret.y);
+            const w = Math.floor(ret.w);
+            const h = Math.floor(ret.h);
+            
+            if (x < 0 || y < 0 || x + w > imageData.width || y + h > imageData.height) {
+                continue;
+            }
+            
+            let pixelsEscuros = 0;
+            let totalPixels = w * h;
+            
+            // Percorrer pixels do retângulo
+            for (let i = 0; i < w; i++) {
+                for (let j = 0; j < h; j++) {
+                    const px = x + i;
+                    const py = y + j;
+                    const idx = (py * imageData.width + px) * 4;
+                    
+                    const brilho = (imageData.data[idx] + imageData.data[idx+1] + imageData.data[idx+2]) / 3;
+                    if (brilho < 100) {
+                        pixelsEscuros++;
+                    }
+                }
+            }
+            
+            const proporcaoPreenchida = pixelsEscuros / totalPixels;
+            
+            // Armazenar a melhor alternativa para cada questão
+            if (!intensidadePorQuestao[ret.questao]) {
+                intensidadePorQuestao[ret.questao] = {};
+            }
+            intensidadePorQuestao[ret.questao][ret.letra] = proporcaoPreenchida;
+            
+            // Se a proporção for alta, considera marcada
+            if (proporcaoPreenchida > CONFIG.limiarPreenchimento) {
+                if (!respostas[ret.questao] || proporcaoPreenchida > respostas[ret.questao].proporcao) {
+                    respostas[ret.questao] = {
+                        letra: ret.letra,
+                        proporcao: proporcaoPreenchida
+                    };
+                }
+            }
+        }
+        
+        // Converter para formato simples
+        const resultado = {};
+        for (const [q, info] of Object.entries(respostas)) {
+            resultado[q] = info.letra;
+        }
+        
+        // Debug: mostrar intensidades
+        if (CONFIG.debug) {
+            let debugStr = "📊 Intensidade por questão (A/B/C/D): ";
+            for (let q = 1; q <= 5; q++) {
+                if (intensidadePorQuestao[q]) {
+                    debugStr += `Q${q}: `;
+                    for (let letra of CONFIG.alternativas) {
+                        const val = intensidadePorQuestao[q][letra] || 0;
+                        debugStr += `${letra}=${(val*100).toFixed(0)}% `;
+                    }
+                    debugStr += " | ";
+                }
+            }
+            debugInfo.innerHTML += `<br>${debugStr}`;
+        }
+        
+        return resultado;
+    }
+    
+    // ============================================================
+    // DESENHAR OVERLAY (RETÂNGULOS DETECTADOS)
+    // ============================================================
+    function desenharOverlay(retangulos) {
+        if (!overlayCanvas.width || !overlayCanvas.height) return;
+        
+        ctxOverlay.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        ctxOverlay.strokeStyle = '#00ff00';
+        ctxOverlay.lineWidth = 2;
+        
+        for (const ret of retangulos) {
+            ctxOverlay.strokeRect(ret.x, ret.y, ret.w, ret.h);
+        }
+    }
+    
+    // ============================================================
+    // ESCANEAR GABARITO (FUNÇÃO PRINCIPAL)
+    // ============================================================
+    async function escanearGabarito() {
         if (!video.videoWidth || !video.videoHeight) {
             statusDiv.innerHTML = "⚠️ Aguarde a câmera iniciar";
             return;
         }
         
-        statusDiv.innerHTML = "📸 Capturando imagem...";
+        statusDiv.innerHTML = "📸 Escaneando gabarito...";
         
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Capturar imagem do vídeo
+        processingCanvas.width = video.videoWidth;
+        processingCanvas.height = video.videoHeight;
+        ctxProcessing.drawImage(video, 0, 0, processingCanvas.width, processingCanvas.height);
         
-        statusDiv.innerHTML = "🔍 Processando gabarito...";
+        // Obter dados da imagem
+        const imageData = ctxProcessing.getImageData(0, 0, processingCanvas.width, processingCanvas.height);
         
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // 1. Detectar marcadores
+        const markers = detectarMarcadores(imageData, processingCanvas.width, processingCanvas.height);
         
-        // Simulação de respostas
+        // 2. Localizar retângulos
+        const retangulos = localizarRetangulos(markers, processingCanvas.width, processingCanvas.height);
+        
+        // Desenhar overlay para feedback visual
+        desenharOverlay(retangulos);
+        
+        if (retangulos.length === 0) {
+            statusDiv.innerHTML = "⚠️ Não foi possível localizar os retângulos. Verifique se os 4 quadrados pretos estão visíveis.";
+            statusDiv.className = "status erro";
+            return;
+        }
+        
+        // 3. Analisar preenchimento
+        const respostas = analisarPreenchimento(imageData, retangulos);
+        
+        if (Object.keys(respostas).length === 0) {
+            statusDiv.innerHTML = "⚠️ Nenhuma resposta detectada. Certifique-se que os retângulos estão bem pintados.";
+            statusDiv.className = "status aviso";
+        } else {
+            respostasDetectadas = respostas;
+            statusDiv.innerHTML = `✅ ${Object.keys(respostas).length} respostas detectadas!`;
+            statusDiv.className = "status sucesso";
+        }
+        
+        exibirResultados();
+    }
+    
+    // ============================================================
+    // SIMULAR RESPOSTAS (PARA TESTE)
+    // ============================================================
+    function simularRespostas() {
         respostasDetectadas = {};
         for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
             const idx = (q - 1) % CONFIG.alternativas.length;
             respostasDetectadas[q] = CONFIG.alternativas[idx];
         }
-        
         exibirResultados();
-        statusDiv.innerHTML = `✅ Processado! ${Object.keys(respostasDetectadas)}/26 respostas`;
-        statusDiv.className = "status sucesso";
+        statusDiv.innerHTML = "🧪 Modo simulação (teste sem câmera)";
+        statusDiv.className = "status info";
     }
     
-    function simularMarcacao() {
-        respostasDetectadas = {};
-        for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
-            const idx = (q - 1) % CONFIG.alternativas.length;
-            respostasDetectadas[q] = CONFIG.alternativas[idx];
-        }
-        exibirResultados();
-        statusDiv.innerHTML = "🧪 Modo simulação";
-        statusDiv.className = "status sucesso";
-    }
-    
+    // ============================================================
+    // EXIBIR RESULTADOS
+    // ============================================================
     function exibirResultados() {
         if (!respostasDetectadas || Object.keys(respostasDetectadas).length === 0) {
             listaRespostas.innerHTML = "⚠️ Nenhuma resposta detectada";
@@ -339,35 +508,54 @@
         }
         html += '</div>';
         
-        html += `<div style="margin-top:8px; background:#252540; padding:6px; border-radius:8px; font-size:0.7rem;">
-                    ✅ ${Object.keys(respostasDetectadas).length}/26 questões
+        // Resumo por blocos
+        html += `<div style="margin-top:8px; background:#252540; padding:6px; border-radius:8px;">
+                    <strong>BLOCO 01:</strong> `;
+        for (let q = 1; q <= 13; q++) html += `${respostasDetectadas[q] || "?"} `;
+        html += `<br><strong>BLOCO 02:</strong> `;
+        for (let q = 14; q <= 26; q++) html += `${respostasDetectadas[q] || "?"} `;
+        html += `<br>✅ ${Object.keys(respostasDetectadas).length}/26 questões
                  </div>`;
         
         listaRespostas.innerHTML = html;
+        
+        // Log para debug
+        console.log("Respostas:", respostasDetectadas);
     }
     
+    // ============================================================
+    // GERAR PDF DO GABARITO
+    // ============================================================
     function gerarGabaritoPDF() {
         const win = window.open('', '_blank');
         win.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Gabarito</title>
+            <title>Gabarito para Impressão</title>
             <style>
                 @page { size: A4; margin: 12mm; }
-                body { font-family: Arial; }
-                .marcador { width: 8mm; height: 8mm; background: black; position: absolute; }
+                body { font-family: Arial, sans-serif; }
+                .marcador {
+                    width: 8mm; height: 8mm; background: black;
+                    position: absolute;
+                }
                 .topo-esq { top: 5mm; left: 5mm; }
                 .topo-dir { top: 5mm; right: 5mm; }
                 .baixo-esq { bottom: 5mm; left: 5mm; }
                 .baixo-dir { bottom: 5mm; right: 5mm; }
                 .bloco { display: inline-block; width: 48%; vertical-align: top; }
-                .questao { margin: 6px 0; display: flex; align-items: center; }
+                .questao { margin: 5px 0; display: flex; align-items: center; }
                 .numero { width: 35px; font-weight: bold; }
-                .alternativas { display: flex; gap: 8px; }
-                .retangulo { width: 10mm; height: 10mm; border: 1.5px solid black; display: inline-block; }
-                .alt-item { text-align: center; }
+                .alternativas { display: flex; gap: 6px; }
+                .retangulo {
+                    width: 9mm; height: 9mm;
+                    border: 1.5px solid black;
+                    display: inline-block;
+                }
+                .alt-item { text-align: center; margin: 0 2px; }
                 .cabecalho { text-align: center; margin-bottom: 15px; }
+                .instrucoes { margin-top: 20px; font-size: 9px; background: #eee; padding: 6px; }
             </style>
         </head>
         <body>
@@ -375,45 +563,67 @@
             <div class="marcador topo-dir"></div>
             <div class="marcador baixo-esq"></div>
             <div class="marcador baixo-dir"></div>
+            
             <div class="cabecalho">
                 <h2>GABARITO</h2>
-                NOME: _________________________ TURMA: _______
+                NOME: _________________________ TURMA: _______ DATA: ___/___/___
             </div>
+            
             <div class="bloco">
                 <h3>BLOCO 01</h3>
                 ${Array.from({length: 13}, (_, i) => `
                     <div class="questao">
                         <div class="numero">Q${i+1}</div>
                         <div class="alternativas">
-                            ${CONFIG.alternativas.map(letra => `<div class="alt-item"><div class="retangulo"></div><div>${letra}</div></div>`).join('')}
+                            ${CONFIG.alternativas.map(letra => `
+                                <div class="alt-item">
+                                    <div class="retangulo"></div>
+                                    <div>${letra}</div>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
                 `).join('')}
             </div>
+            
             <div class="bloco">
                 <h3>BLOCO 02</h3>
                 ${Array.from({length: 13}, (_, i) => `
                     <div class="questao">
                         <div class="numero">Q${i+14}</div>
                         <div class="alternativas">
-                            ${CONFIG.alternativas.map(letra => `<div class="alt-item"><div class="retangulo"></div><div>${letra}</div></div>`).join('')}
+                            ${CONFIG.alternativas.map(letra => `
+                                <div class="alt-item">
+                                    <div class="retangulo"></div>
+                                    <div>${letra}</div>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
                 `).join('')}
             </div>
-            <p style="margin-top:20px;">⚠️ PINTE COMPLETAMENTE o retângulo da alternativa escolhida.</p>
+            
+            <div class="instrucoes">
+                ⚠️ INSTRUÇÕES:<br>
+                • PINTE COMPLETAMENTE o retângulo da alternativa escolhida.<br>
+                • Use caneta escura (preta ou azul).<br>
+                • Os 4 quadrados pretos nos cantos são para calibração do scanner.
+            </div>
         </body>
         </html>
         `);
         win.document.close();
     }
     
-    // Eventos (só existem depois que a câmera é ativada)
-    document.addEventListener('click', (e) => {
-        if (e.target.id === 'btnCapture') capturarEProcessar();
-        if (e.target.id === 'btnSimular') simularMarcacao();
-        if (e.target.id === 'btnPDF') gerarGabaritoPDF();
-    });
+    // ============================================================
+    // EVENTOS
+    // ============================================================
+    btnCapture.addEventListener('click', escanearGabarito);
+    btnSimular.addEventListener('click', simularRespostas);
+    btnPDF.addEventListener('click', gerarGabaritoPDF);
+    
+    // Iniciar
+    iniciarCamera();
 </script>
 </body>
 </html>
