@@ -48,6 +48,21 @@
       font-weight:bold;
       margin-bottom:12px;
       color:#0b57d0;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .titulo-pasta:hover{
+      opacity: 0.8;
+    }
+
+    .toggle-icon {
+      font-size: 18px;
+      display: inline-block;
+      width: 20px;
     }
 
     .subpasta{
@@ -60,6 +75,19 @@
       font-weight:bold;
       margin-bottom:8px;
       color:#444;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .titulo-subpasta:hover{
+      opacity: 0.8;
+    }
+
+    .subpasta-content {
+      margin-left: 20px;
     }
 
     .arquivo{
@@ -88,6 +116,11 @@
       font-size:20px;
     }
 
+    /* Classe para esconder elementos */
+    .hidden {
+      display: none;
+    }
+
     @media(max-width:700px){
 
       body{
@@ -109,7 +142,6 @@
       .arquivo{
         padding:12px;
       }
-
     }
   </style>
 </head>
@@ -136,11 +168,25 @@
         const divPasta = document.createElement('div');
         divPasta.className = 'pasta';
 
+        // Container do título da pasta com toggle
         const tituloPasta = document.createElement('div');
         tituloPasta.className = 'titulo-pasta';
-        tituloPasta.innerHTML = '📁 ' + pasta;
-
+        
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'toggle-icon';
+        iconSpan.textContent = '▼'; // Começa aberto
+        
+        const textSpan = document.createElement('span');
+        textSpan.innerHTML = '📁 ' + pasta;
+        
+        tituloPasta.appendChild(iconSpan);
+        tituloPasta.appendChild(textSpan);
+        
         divPasta.appendChild(tituloPasta);
+
+        // Container para o conteúdo da pasta (subpastas)
+        const pastaContent = document.createElement('div');
+        pastaContent.className = 'pasta-content';
 
         const conteudoPasta = dados.RELATORIOS[pasta];
 
@@ -149,11 +195,25 @@
           const divSub = document.createElement('div');
           divSub.className = 'subpasta';
 
+          // Container do título da subpasta com toggle
           const tituloSub = document.createElement('div');
           tituloSub.className = 'titulo-subpasta';
-          tituloSub.innerHTML = '📂 ' + subpasta;
-
+          
+          const subIconSpan = document.createElement('span');
+          subIconSpan.className = 'toggle-icon';
+          subIconSpan.textContent = '▼'; // Começa aberto
+          
+          const subTextSpan = document.createElement('span');
+          subTextSpan.innerHTML = '📂 ' + subpasta;
+          
+          tituloSub.appendChild(subIconSpan);
+          tituloSub.appendChild(subTextSpan);
+          
           divSub.appendChild(tituloSub);
+
+          // Container para os arquivos da subpasta
+          const subContent = document.createElement('div');
+          subContent.className = 'subpasta-content';
 
           const arquivos = conteudoPasta[subpasta];
 
@@ -162,8 +222,7 @@
             const divArquivo = document.createElement('div');
             divArquivo.className = 'arquivo';
 
-            const caminho =
-              `RELATORIOS/${pasta}/${subpasta}/${nomeArquivo}`;
+            const caminho = `RELATORIOS/${pasta}/${subpasta}/${nomeArquivo}`;
 
             divArquivo.innerHTML = `
               <span class="icone">🌎</span>
@@ -172,15 +231,47 @@
               </a>
             `;
 
-            divSub.appendChild(divArquivo);
+            subContent.appendChild(divArquivo);
 
           });
 
-          divPasta.appendChild(divSub);
+          divSub.appendChild(subContent);
+          pastaContent.appendChild(divSub);
+
+          // Evento de toggle para a subpasta
+          tituloSub.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const content = this.nextElementSibling;
+            const icon = this.querySelector('.toggle-icon');
+            
+            if(content.classList.contains('hidden')) {
+              content.classList.remove('hidden');
+              icon.textContent = '▼';
+            } else {
+              content.classList.add('hidden');
+              icon.textContent = '▶';
+            }
+          });
 
         }
 
+        divPasta.appendChild(pastaContent);
         estrutura.appendChild(divPasta);
+
+        // Evento de toggle para a pasta principal
+        tituloPasta.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const content = this.nextElementSibling;
+          const icon = this.querySelector('.toggle-icon');
+          
+          if(content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            icon.textContent = '▼';
+          } else {
+            content.classList.add('hidden');
+            icon.textContent = '▶';
+          }
+        });
 
       }
 
