@@ -1,629 +1,214 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Scanner de Gabarito</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            background: #000;
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .header {
-            background: #0a0a0a;
-            padding: 12px;
-            text-align: center;
-        }
-        h1 { font-size: 1.2rem; }
-        .sub { font-size: 0.65rem; opacity: 0.7; }
-        
-        .status {
-            background: #1a1a2a;
-            padding: 8px;
-            font-size: 0.7rem;
-            text-align: center;
-        }
-        .status.sucesso { background: #154a15; color: #88ff88; }
-        .status.erro { background: #4a1515; color: #ff8888; }
-        .status.info { background: #0d6efd; }
-        
-        .camera-container {
-            background: #000;
-            flex: 1;
-            min-height: 280px;
-            position: relative;
-        }
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-        
-        .controls {
-            background: #1a1a2a;
-            padding: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 8px;
-        }
-        button {
-            background: #0d6efd;
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 40px;
-            font-size: 0.85rem;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        button:active { transform: scale(0.97); }
-        button.success { background: #198754; }
-        button.warning { background: #fd7e14; }
-        
-        .resultados {
-            background: #1a1a2a;
-            padding: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-size: 0.7rem;
-        }
-        .gabarito-grade {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 4px;
-            margin-top: 8px;
-        }
-        .gabarito-item {
-            background: #252540;
-            padding: 4px;
-            border-radius: 6px;
-            text-align: center;
-        }
-        .gabarito-item span {
-            color: #ffaa44;
-            font-size: 0.9rem;
-            font-weight: bold;
-        }
-        .preview-canvas {
-            display: none;
-        }
-        .debug-info {
-            font-size: 0.6rem;
-            color: #888;
-            text-align: center;
-            padding: 4px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RELATÓRIOS</title>
+
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, Helvetica, sans-serif;
+    }
+
+    body{
+      background:#f4f6f9;
+      padding:20px;
+      color:#222;
+    }
+
+    h1{
+      margin-bottom:20px;
+      font-size:28px;
+      text-align:center;
+    }
+
+    #busca{
+      width:100%;
+      padding:14px;
+      border-radius:10px;
+      border:1px solid #ccc;
+      margin-bottom:20px;
+      font-size:16px;
+    }
+
+    .pasta{
+      background:white;
+      border-radius:12px;
+      padding:15px;
+      margin-bottom:15px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .titulo-pasta{
+      font-size:20px;
+      font-weight:bold;
+      margin-bottom:12px;
+      color:#0b57d0;
+    }
+
+    .subpasta{
+      margin-left:15px;
+      margin-bottom:15px;
+    }
+
+    .titulo-subpasta{
+      font-size:17px;
+      font-weight:bold;
+      margin-bottom:8px;
+      color:#444;
+    }
+
+    .arquivo{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px;
+      background:#f1f3f4;
+      border-radius:10px;
+      margin-bottom:8px;
+      transition:0.2s;
+    }
+
+    .arquivo:hover{
+      background:#dfe7fd;
+    }
+
+    .arquivo a{
+      text-decoration:none;
+      color:#111;
+      width:100%;
+      font-weight:bold;
+    }
+
+    .icone{
+      font-size:20px;
+    }
+
+    @media(max-width:700px){
+
+      body{
+        padding:10px;
+      }
+
+      h1{
+        font-size:22px;
+      }
+
+      .titulo-pasta{
+        font-size:18px;
+      }
+
+      .titulo-subpasta{
+        font-size:16px;
+      }
+
+      .arquivo{
+        padding:12px;
+      }
+
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="header">
-    <h1>📸 Scanner de Gabarito</h1>
-    <div class="sub">26 questões | Pinte o retângulo inteiro</div>
-</div>
+  <h1>📁 RELATÓRIOS</h1>
 
-<div class="status" id="status">
-    🔄 Iniciando câmera...
-</div>
+  <input type="text" id="busca" placeholder="🔍 Buscar relatório...">
 
-<div class="camera-container">
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="overlayCanvas"></canvas>
-</div>
+  <div id="estrutura"></div>
 
-<div class="controls">
-    <button id="btnCapture">📷 ESCANEAR GABARITO</button>
-    <button id="btnSimular" class="warning">🧪 SIMULAR</button>
-    <button id="btnPDF" class="success">🖨️ PDF GABARITO</button>
-</div>
+  <script>
 
-<div class="resultados" id="resultados">
-    <strong>📋 RESPOSTAS DETECTADAS:</strong>
-    <div id="listaRespostas" style="margin-top: 6px;">
-        ⏳ Aguardando escaneamento...
-    </div>
-</div>
+    async function carregarDados(){
 
-<div class="debug-info" id="debugInfo"></div>
+      const resposta = await fetch('dados.json');
+      const dados = await resposta.json();
 
-<canvas id="processingCanvas" class="preview-canvas"></canvas>
+      const estrutura = document.getElementById('estrutura');
 
-<script>
-    // ============================================================
-    // CONFIGURAÇÃO DO GABARITO
-    // ============================================================
-    const CONFIG = {
-        questoesPorBloco: 13,
-        totalQuestoes: 26,
-        alternativas: ['A', 'B', 'C', 'D'],
-        blocos: 2,
-        limiarPreenchimento: 0.28,  // 28% de pixels escuros = preenchido (ajustável)
-        debug: true
-    };
-    
-    // Elementos
-    const video = document.getElementById('video');
-    const overlayCanvas = document.getElementById('overlayCanvas');
-    const processingCanvas = document.getElementById('processingCanvas');
-    const ctxOverlay = overlayCanvas.getContext('2d');
-    const ctxProcessing = processingCanvas.getContext('2d');
-    const statusDiv = document.getElementById('status');
-    const btnCapture = document.getElementById('btnCapture');
-    const btnSimular = document.getElementById('btnSimular');
-    const btnPDF = document.getElementById('btnPDF');
-    const listaRespostas = document.getElementById('listaRespostas');
-    const debugInfo = document.getElementById('debugInfo');
-    
-    let streamAtual = null;
-    let respostasDetectadas = {};
-    
-    // ============================================================
-    // INICIAR CÂMERA
-    // ============================================================
-    async function iniciarCamera() {
-        statusDiv.innerHTML = "📷 Solicitando permissão da câmera...";
-        
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { exact: "environment" } }
-            });
-            aplicarStream(stream);
-        } catch (err) {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                aplicarStream(stream);
-            } catch (err2) {
-                statusDiv.className = "status erro";
-                statusDiv.innerHTML = "❌ Erro ao acessar câmera. Verifique as permissões.";
-            }
+      for(const pasta in dados.RELATORIOS){
+
+        const divPasta = document.createElement('div');
+        divPasta.className = 'pasta';
+
+        const tituloPasta = document.createElement('div');
+        tituloPasta.className = 'titulo-pasta';
+        tituloPasta.innerHTML = '📁 ' + pasta;
+
+        divPasta.appendChild(tituloPasta);
+
+        const conteudoPasta = dados.RELATORIOS[pasta];
+
+        for(const subpasta in conteudoPasta){
+
+          const divSub = document.createElement('div');
+          divSub.className = 'subpasta';
+
+          const tituloSub = document.createElement('div');
+          tituloSub.className = 'titulo-subpasta';
+          tituloSub.innerHTML = '📂 ' + subpasta;
+
+          divSub.appendChild(tituloSub);
+
+          const arquivos = conteudoPasta[subpasta];
+
+          arquivos.forEach(nomeArquivo => {
+
+            const divArquivo = document.createElement('div');
+            divArquivo.className = 'arquivo';
+
+            const caminho =
+              `RELATORIOS/${pasta}/${subpasta}/${nomeArquivo}`;
+
+            divArquivo.innerHTML = `
+              <span class="icone">🌎</span>
+              <a href="${caminho}" target="_blank">
+                ${nomeArquivo.replace('.html','')}
+              </a>
+            `;
+
+            divSub.appendChild(divArquivo);
+
+          });
+
+          divPasta.appendChild(divSub);
+
         }
+
+        estrutura.appendChild(divPasta);
+
+      }
+
     }
-    
-    function aplicarStream(stream) {
-        streamAtual = stream;
-        video.srcObject = stream;
-        
-        video.onloadedmetadata = () => {
-            video.play();
-            
-            // Ajustar canvas overlay para o tamanho do vídeo
-            const resizeObserver = new ResizeObserver(() => {
-                if (video.videoWidth && video.videoHeight) {
-                    overlayCanvas.width = video.videoWidth;
-                    overlayCanvas.height = video.videoHeight;
-                    overlayCanvas.style.width = '100%';
-                    overlayCanvas.style.height = '100%';
-                    resizeObserver.disconnect();
-                }
-            });
-            resizeObserver.observe(video);
-            
-            statusDiv.className = "status sucesso";
-            statusDiv.innerHTML = "✅ CÂMERA ATIVA! Aponte para o gabarito e clique em ESCANEAR";
-        };
-    }
-    
-    // ============================================================
-    // DETECÇÃO DOS MARCADORES PRETOS (CANTOS)
-    // ============================================================
-    function detectarMarcadores(imageData, width, height) {
-        // Procura por quadrados pretos nos cantos
-        const markers = {
-            topLeft: null,
-            topRight: null,
-            bottomLeft: null,
-            bottomRight: null
-        };
-        
-        // Áreas de busca nos cantos (10% da borda)
-        const searchSize = Math.min(width, height) * 0.08;
-        
-        // Função para encontrar o centro do quadrado preto em uma região
-        function encontrarMarcador(regiaoX, regiaoY, regiaoW, regiaoH) {
-            let totalX = 0, totalY = 0, pixelsPretos = 0;
-            
-            for (let y = regiaoY; y < regiaoY + regiaoH && y < height; y++) {
-                for (let x = regiaoX; x < regiaoX + regiaoW && x < width; x++) {
-                    const idx = (y * width + x) * 4;
-                    const brilho = (imageData.data[idx] + imageData.data[idx+1] + imageData.data[idx+2]) / 3;
-                    if (brilho < 80) { // Pixel escuro
-                        totalX += x;
-                        totalY += y;
-                        pixelsPretos++;
-                    }
-                }
-            }
-            
-            if (pixelsPretos > 50) {
-                return { x: totalX / pixelsPretos, y: totalY / pixelsPretos };
-            }
-            return null;
+
+    carregarDados();
+
+    document.getElementById('busca').addEventListener('keyup', function(){
+
+      const texto = this.value.toLowerCase();
+
+      const arquivos = document.querySelectorAll('.arquivo');
+
+      arquivos.forEach(item => {
+
+        const nome = item.innerText.toLowerCase();
+
+        if(nome.includes(texto)){
+          item.style.display = 'flex';
+        }else{
+          item.style.display = 'none';
         }
-        
-        // Buscar nos 4 cantos
-        markers.topLeft = encontrarMarcador(0, 0, searchSize, searchSize);
-        markers.topRight = encontrarMarcador(width - searchSize, 0, searchSize, searchSize);
-        markers.bottomLeft = encontrarMarcador(0, height - searchSize, searchSize, searchSize);
-        markers.bottomRight = encontrarMarcador(width - searchSize, height - searchSize, searchSize, searchSize);
-        
-        return markers;
-    }
-    
-    // ============================================================
-    // LOCALIZAR RETÂNGULOS DAS ALTERNATIVAS
-    // ============================================================
-    function localizarRetangulos(markers, imgWidth, imgHeight) {
-        const retangulos = [];
-        
-        // Verificar se os marcadores foram encontrados
-        if (!markers.topLeft || !markers.topRight || !markers.bottomLeft || !markers.bottomRight) {
-            debugInfo.innerHTML = "⚠️ Marcadores não detectados. Certifique-se que os 4 quadrados pretos estão visíveis.";
-            return retangulos;
-        }
-        
-        // Área útil da folha (entre os marcadores)
-        const leftBound = markers.topLeft.x;
-        const rightBound = markers.topRight.x;
-        const topBound = markers.topLeft.y;
-        const bottomBound = markers.bottomLeft.y;
-        
-        const larguraUtil = rightBound - leftBound;
-        const alturaUtil = bottomBound - topBound;
-        
-        if (larguraUtil <= 0 || alturaUtil <= 0) return retangulos;
-        
-        // Divisão em 2 blocos
-        const larguraBloco = larguraUtil / 2;
-        
-        for (let bloco = 0; bloco < CONFIG.blocos; bloco++) {
-            const blocoX = leftBound + (bloco * larguraBloco);
-            
-            // Margens internas do bloco (onde estão as questões)
-            const margemEsq = blocoX + (larguraBloco * 0.12);
-            const margemDir = blocoX + larguraBloco - (larguraBloco * 0.08);
-            const larguraGrade = margemDir - margemEsq;
-            
-            // Altura de cada questão
-            const alturaQuestao = alturaUtil / CONFIG.questoesPorBloco;
-            
-            for (let q = 0; q < CONFIG.questoesPorBloco; q++) {
-                const questaoY = topBound + (q * alturaQuestao) + (alturaQuestao * 0.15);
-                const alturaRetangulo = alturaQuestao * 0.55;
-                
-                // Largura de cada alternativa
-                const larguraAlternativa = larguraGrade / 4;
-                
-                for (let alt = 0; alt < CONFIG.alternativas.length; alt++) {
-                    const altX = margemEsq + (alt * larguraAlternativa);
-                    const altCentroX = altX + (larguraAlternativa * 0.35);
-                    const altLargura = larguraAlternativa * 0.5;
-                    
-                    retangulos.push({
-                        questao: (bloco * CONFIG.questoesPorBloco) + q + 1,
-                        letra: CONFIG.alternativas[alt],
-                        x: altCentroX,
-                        y: questaoY,
-                        w: altLargura,
-                        h: alturaRetangulo,
-                        bloco: bloco + 1
-                    });
-                }
-            }
-        }
-        
-        debugInfo.innerHTML = `✅ ${retangulos.length} retângulos localizados (${CONFIG.totalQuestoes * 4} esperados)`;
-        return retangulos;
-    }
-    
-    // ============================================================
-    // ANALISAR PREENCHIMENTO DOS RETÂNGULOS
-    // ============================================================
-    function analisarPreenchimento(imageData, retangulos) {
-        const respostas = {};
-        const intensidadePorQuestao = {};
-        
-        for (const ret of retangulos) {
-            const x = Math.floor(ret.x);
-            const y = Math.floor(ret.y);
-            const w = Math.floor(ret.w);
-            const h = Math.floor(ret.h);
-            
-            if (x < 0 || y < 0 || x + w > imageData.width || y + h > imageData.height) {
-                continue;
-            }
-            
-            let pixelsEscuros = 0;
-            let totalPixels = w * h;
-            
-            // Percorrer pixels do retângulo
-            for (let i = 0; i < w; i++) {
-                for (let j = 0; j < h; j++) {
-                    const px = x + i;
-                    const py = y + j;
-                    const idx = (py * imageData.width + px) * 4;
-                    
-                    const brilho = (imageData.data[idx] + imageData.data[idx+1] + imageData.data[idx+2]) / 3;
-                    if (brilho < 100) {
-                        pixelsEscuros++;
-                    }
-                }
-            }
-            
-            const proporcaoPreenchida = pixelsEscuros / totalPixels;
-            
-            // Armazenar a melhor alternativa para cada questão
-            if (!intensidadePorQuestao[ret.questao]) {
-                intensidadePorQuestao[ret.questao] = {};
-            }
-            intensidadePorQuestao[ret.questao][ret.letra] = proporcaoPreenchida;
-            
-            // Se a proporção for alta, considera marcada
-            if (proporcaoPreenchida > CONFIG.limiarPreenchimento) {
-                if (!respostas[ret.questao] || proporcaoPreenchida > respostas[ret.questao].proporcao) {
-                    respostas[ret.questao] = {
-                        letra: ret.letra,
-                        proporcao: proporcaoPreenchida
-                    };
-                }
-            }
-        }
-        
-        // Converter para formato simples
-        const resultado = {};
-        for (const [q, info] of Object.entries(respostas)) {
-            resultado[q] = info.letra;
-        }
-        
-        // Debug: mostrar intensidades
-        if (CONFIG.debug) {
-            let debugStr = "📊 Intensidade por questão (A/B/C/D): ";
-            for (let q = 1; q <= 5; q++) {
-                if (intensidadePorQuestao[q]) {
-                    debugStr += `Q${q}: `;
-                    for (let letra of CONFIG.alternativas) {
-                        const val = intensidadePorQuestao[q][letra] || 0;
-                        debugStr += `${letra}=${(val*100).toFixed(0)}% `;
-                    }
-                    debugStr += " | ";
-                }
-            }
-            debugInfo.innerHTML += `<br>${debugStr}`;
-        }
-        
-        return resultado;
-    }
-    
-    // ============================================================
-    // DESENHAR OVERLAY (RETÂNGULOS DETECTADOS)
-    // ============================================================
-    function desenharOverlay(retangulos) {
-        if (!overlayCanvas.width || !overlayCanvas.height) return;
-        
-        ctxOverlay.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-        ctxOverlay.strokeStyle = '#00ff00';
-        ctxOverlay.lineWidth = 2;
-        
-        for (const ret of retangulos) {
-            ctxOverlay.strokeRect(ret.x, ret.y, ret.w, ret.h);
-        }
-    }
-    
-    // ============================================================
-    // ESCANEAR GABARITO (FUNÇÃO PRINCIPAL)
-    // ============================================================
-    async function escanearGabarito() {
-        if (!video.videoWidth || !video.videoHeight) {
-            statusDiv.innerHTML = "⚠️ Aguarde a câmera iniciar";
-            return;
-        }
-        
-        statusDiv.innerHTML = "📸 Escaneando gabarito...";
-        
-        // Capturar imagem do vídeo
-        processingCanvas.width = video.videoWidth;
-        processingCanvas.height = video.videoHeight;
-        ctxProcessing.drawImage(video, 0, 0, processingCanvas.width, processingCanvas.height);
-        
-        // Obter dados da imagem
-        const imageData = ctxProcessing.getImageData(0, 0, processingCanvas.width, processingCanvas.height);
-        
-        // 1. Detectar marcadores
-        const markers = detectarMarcadores(imageData, processingCanvas.width, processingCanvas.height);
-        
-        // 2. Localizar retângulos
-        const retangulos = localizarRetangulos(markers, processingCanvas.width, processingCanvas.height);
-        
-        // Desenhar overlay para feedback visual
-        desenharOverlay(retangulos);
-        
-        if (retangulos.length === 0) {
-            statusDiv.innerHTML = "⚠️ Não foi possível localizar os retângulos. Verifique se os 4 quadrados pretos estão visíveis.";
-            statusDiv.className = "status erro";
-            return;
-        }
-        
-        // 3. Analisar preenchimento
-        const respostas = analisarPreenchimento(imageData, retangulos);
-        
-        if (Object.keys(respostas).length === 0) {
-            statusDiv.innerHTML = "⚠️ Nenhuma resposta detectada. Certifique-se que os retângulos estão bem pintados.";
-            statusDiv.className = "status aviso";
-        } else {
-            respostasDetectadas = respostas;
-            statusDiv.innerHTML = `✅ ${Object.keys(respostas).length} respostas detectadas!`;
-            statusDiv.className = "status sucesso";
-        }
-        
-        exibirResultados();
-    }
-    
-    // ============================================================
-    // SIMULAR RESPOSTAS (PARA TESTE)
-    // ============================================================
-    function simularRespostas() {
-        respostasDetectadas = {};
-        for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
-            const idx = (q - 1) % CONFIG.alternativas.length;
-            respostasDetectadas[q] = CONFIG.alternativas[idx];
-        }
-        exibirResultados();
-        statusDiv.innerHTML = "🧪 Modo simulação (teste sem câmera)";
-        statusDiv.className = "status info";
-    }
-    
-    // ============================================================
-    // EXIBIR RESULTADOS
-    // ============================================================
-    function exibirResultados() {
-        if (!respostasDetectadas || Object.keys(respostasDetectadas).length === 0) {
-            listaRespostas.innerHTML = "⚠️ Nenhuma resposta detectada";
-            return;
-        }
-        
-        let html = '<div class="gabarito-grade">';
-        for (let q = 1; q <= CONFIG.totalQuestoes; q++) {
-            const resposta = respostasDetectadas[q] || "?";
-            html += `<div class="gabarito-item">
-                        Q${q}<br>
-                        <span>${resposta}</span>
-                     </div>`;
-        }
-        html += '</div>';
-        
-        // Resumo por blocos
-        html += `<div style="margin-top:8px; background:#252540; padding:6px; border-radius:8px;">
-                    <strong>BLOCO 01:</strong> `;
-        for (let q = 1; q <= 13; q++) html += `${respostasDetectadas[q] || "?"} `;
-        html += `<br><strong>BLOCO 02:</strong> `;
-        for (let q = 14; q <= 26; q++) html += `${respostasDetectadas[q] || "?"} `;
-        html += `<br>✅ ${Object.keys(respostasDetectadas).length}/26 questões
-                 </div>`;
-        
-        listaRespostas.innerHTML = html;
-        
-        // Log para debug
-        console.log("Respostas:", respostasDetectadas);
-    }
-    
-    // ============================================================
-    // GERAR PDF DO GABARITO
-    // ============================================================
-    function gerarGabaritoPDF() {
-        const win = window.open('', '_blank');
-        win.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Gabarito para Impressão</title>
-            <style>
-                @page { size: A4; margin: 12mm; }
-                body { font-family: Arial, sans-serif; }
-                .marcador {
-                    width: 8mm; height: 8mm; background: black;
-                    position: absolute;
-                }
-                .topo-esq { top: 5mm; left: 5mm; }
-                .topo-dir { top: 5mm; right: 5mm; }
-                .baixo-esq { bottom: 5mm; left: 5mm; }
-                .baixo-dir { bottom: 5mm; right: 5mm; }
-                .bloco { display: inline-block; width: 48%; vertical-align: top; }
-                .questao { margin: 5px 0; display: flex; align-items: center; }
-                .numero { width: 35px; font-weight: bold; }
-                .alternativas { display: flex; gap: 6px; }
-                .retangulo {
-                    width: 9mm; height: 9mm;
-                    border: 1.5px solid black;
-                    display: inline-block;
-                }
-                .alt-item { text-align: center; margin: 0 2px; }
-                .cabecalho { text-align: center; margin-bottom: 15px; }
-                .instrucoes { margin-top: 20px; font-size: 9px; background: #eee; padding: 6px; }
-            </style>
-        </head>
-        <body>
-            <div class="marcador topo-esq"></div>
-            <div class="marcador topo-dir"></div>
-            <div class="marcador baixo-esq"></div>
-            <div class="marcador baixo-dir"></div>
-            
-            <div class="cabecalho">
-                <h2>GABARITO</h2>
-                NOME: _________________________ TURMA: _______ DATA: ___/___/___
-            </div>
-            
-            <div class="bloco">
-                <h3>BLOCO 01</h3>
-                ${Array.from({length: 13}, (_, i) => `
-                    <div class="questao">
-                        <div class="numero">Q${i+1}</div>
-                        <div class="alternativas">
-                            ${CONFIG.alternativas.map(letra => `
-                                <div class="alt-item">
-                                    <div class="retangulo"></div>
-                                    <div>${letra}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-            
-            <div class="bloco">
-                <h3>BLOCO 02</h3>
-                ${Array.from({length: 13}, (_, i) => `
-                    <div class="questao">
-                        <div class="numero">Q${i+14}</div>
-                        <div class="alternativas">
-                            ${CONFIG.alternativas.map(letra => `
-                                <div class="alt-item">
-                                    <div class="retangulo"></div>
-                                    <div>${letra}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-            
-            <div class="instrucoes">
-                ⚠️ INSTRUÇÕES:<br>
-                • PINTE COMPLETAMENTE o retângulo da alternativa escolhida.<br>
-                • Use caneta escura (preta ou azul).<br>
-                • Os 4 quadrados pretos nos cantos são para calibração do scanner.
-            </div>
-        </body>
-        </html>
-        `);
-        win.document.close();
-    }
-    
-    // ============================================================
-    // EVENTOS
-    // ============================================================
-    btnCapture.addEventListener('click', escanearGabarito);
-    btnSimular.addEventListener('click', simularRespostas);
-    btnPDF.addEventListener('click', gerarGabaritoPDF);
-    
-    // Iniciar
-    iniciarCamera();
-</script>
+
+      });
+
+    });
+
+  </script>
+
 </body>
 </html>
