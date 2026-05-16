@@ -3,303 +3,427 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RELATÓRIOS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>RELATÓRIOS APAN - SEMED</title>
 
   <style>
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-      font-family:Arial, Helvetica, sans-serif;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     }
 
-    body{
-      background:#f4f6f9;
-      padding:20px;
-      color:#222;
+    body {
+      background: linear-gradient(145deg, #e9eef3 0%, #dce3ec 100%);
+      min-height: 100vh;
+      padding: 2rem 1.5rem;
     }
 
-    h1{
-      margin-bottom:20px;
-      font-size:28px;
-      text-align:center;
+    /* Container principal para centralizar e dar largura máxima */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
     }
 
-    #busca{
-      width:100%;
-      padding:14px;
-      border-radius:10px;
-      border:1px solid #ccc;
-      margin-bottom:20px;
-      font-size:16px;
+    /* Cabeçalho com estilo mais refinado */
+    .header {
+      background: white;
+      border-radius: 2rem;
+      padding: 1.2rem 1.8rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+      text-align: center;
+      border: 1px solid rgba(11, 87, 208, 0.15);
     }
 
-    .pasta{
-      background:white;
-      border-radius:12px;
-      padding:15px;
-      margin-bottom:15px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    h1 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #0b2b4f;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
-    .titulo-pasta{
-      font-size:20px;
-      font-weight:bold;
-      margin-bottom:12px;
-      color:#0b57d0;
+    h1::before {
+      content: "📋";
+      font-size: 1.9rem;
+    }
+
+    .badge-semed {
+      background: #eef2fa;
+      font-size: 0.8rem;
+      font-weight: normal;
+      padding: 0.25rem 0.9rem;
+      border-radius: 40px;
+      color: #0b57d0;
+      letter-spacing: normal;
+    }
+
+    /* Busca estilizada */
+    .busca-wrapper {
+      background: white;
+      border-radius: 60px;
+      padding: 4px 4px 4px 20px;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
+      transition: 0.2s;
+    }
+
+    .busca-wrapper:focus-within {
+      border-color: #0b57d0;
+      box-shadow: 0 0 0 3px rgba(11, 87, 208, 0.2);
+    }
+
+    #busca {
+      flex: 1;
+      padding: 14px 0;
+      border: none;
+      background: transparent;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .busca-icon {
+      background: #0b57d0;
+      color: white;
+      padding: 10px 24px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 0.3px;
+    }
+
+    /* Cards de pastas principais */
+    .pasta {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 1rem 1.5rem 1.5rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s ease;
+      border: 1px solid rgba(0, 0, 0, 0.03);
+    }
+
+    .pasta:hover {
+      box-shadow: 0 12px 22px rgba(0, 0, 0, 0.08);
+    }
+
+    .titulo-pasta {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #0b57d0;
       cursor: pointer;
       user-select: none;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
+      padding: 8px 0 8px 4px;
+      border-bottom: 2px solid #eef2ff;
+      margin-bottom: 12px;
     }
 
-    .titulo-pasta:hover{
-      opacity: 0.8;
+    .titulo-pasta:hover {
+      opacity: 0.85;
     }
 
     .toggle-icon {
-      font-size: 18px;
-      display: inline-block;
-      width: 20px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      width: 26px;
+      color: #2c5f8a;
     }
 
-    .subpasta{
-      margin-left:15px;
-      margin-bottom:15px;
+    /* Subpastas */
+    .pasta-content {
+      margin-left: 8px;
+      transition: 0.1s;
     }
 
-    .titulo-subpasta{
-      font-size:17px;
-      font-weight:bold;
-      margin-bottom:8px;
-      color:#444;
+    .subpasta {
+      margin: 8px 0 12px 0;
+      background: #fafcff;
+      border-radius: 1.2rem;
+      padding: 0.7rem 1rem 0.9rem 1rem;
+    }
+
+    .titulo-subpasta {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1e4663;
       cursor: pointer;
       user-select: none;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      padding: 4px 4px 6px 4px;
+      background: #f1f5f9;
+      border-radius: 60px;
+      padding: 8px 16px;
+      margin-bottom: 10px;
+      transition: 0.1s;
     }
 
-    .titulo-subpasta:hover{
-      opacity: 0.8;
+    .titulo-subpasta:hover {
+      background: #e6edf6;
     }
 
     .subpasta-content {
-      margin-left: 20px;
+      margin-left: 28px;
+      padding: 6px 0 4px 0;
     }
 
-    .arquivo{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:10px;
-      background:#f1f3f4;
-      border-radius:10px;
-      margin-bottom:8px;
-      transition:0.2s;
+    /* Arquivos estilo lista moderna */
+    .arquivo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      background: #ffffff;
+      border-radius: 60px;
+      margin-bottom: 8px;
+      transition: 0.15s;
+      border: 1px solid #e9edf2;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     }
 
-    .arquivo:hover{
-      background:#dfe7fd;
+    .arquivo:hover {
+      background: #eef3fe;
+      border-color: #cbdffa;
+      transform: translateX(4px);
     }
 
-    .arquivo a{
-      text-decoration:none;
-      color:#111;
-      width:100%;
-      font-weight:bold;
+    .arquivo a {
+      text-decoration: none;
+      color: #1e2f44;
+      font-weight: 500;
+      width: 100%;
+      font-size: 0.95rem;
     }
 
-    .icone{
-      font-size:20px;
+    .icone {
+      font-size: 1.3rem;
     }
 
-    /* Classe para esconder elementos */
+    /* Esconder conteúdo */
     .hidden {
       display: none;
     }
 
-    @media(max-width:700px){
+    /* rodapé sutil */
+    .footer-info {
+      text-align: center;
+      margin-top: 2.5rem;
+      font-size: 0.75rem;
+      color: #4b6f8e;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+      padding-top: 1.8rem;
+    }
 
-      body{
-        padding:10px;
+    @media(max-width: 680px) {
+      body {
+        padding: 1rem;
       }
-
-      h1{
-        font-size:22px;
+      h1 {
+        font-size: 1.3rem;
+        flex-direction: column;
+        gap: 8px;
       }
-
-      .titulo-pasta{
-        font-size:18px;
+      .busca-wrapper {
+        padding: 4px 4px 4px 16px;
       }
-
-      .titulo-subpasta{
-        font-size:16px;
+      .busca-icon {
+        padding: 8px 16px;
+        font-size: 0.75rem;
       }
-
-      .arquivo{
-        padding:12px;
+      .titulo-pasta {
+        font-size: 1.2rem;
+      }
+      .subpasta-content {
+        margin-left: 8px;
+      }
+      .arquivo {
+        padding: 8px 12px;
       }
     }
   </style>
 </head>
-
 <body>
+<div class="container">
+  <div class="header">
+    <h1>RELATÓRIOS APAN - SEMED - ANADIA AL. 
+      <span class="badge-semed">📂 Rede Municipal</span>
+    </h1>
+  </div>
 
-  <h1>📁 RELATÓRIOS</h1>
-
-  <input type="text" id="busca" placeholder="🔍 Buscar relatório...">
+  <div class="busca-wrapper">
+    <input type="text" id="busca" placeholder="Buscar relatório por nome...">
+    <div class="busca-icon">🔍 Buscar</div>
+  </div>
 
   <div id="estrutura"></div>
+  <div class="footer-info">
+    📄 Clique nas pastas para expandir • Navegação hierárquica
+  </div>
+</div>
 
-  <script>
-
-    async function carregarDados(){
-
+<script>
+  async function carregarDados() {
+    try {
       const resposta = await fetch('dados.json');
       const dados = await resposta.json();
 
       const estrutura = document.getElementById('estrutura');
+      estrutura.innerHTML = ''; // limpa por segurança
 
-      for(const pasta in dados.RELATORIOS){
-
+      for (const pasta in dados.RELATORIOS) {
         const divPasta = document.createElement('div');
         divPasta.className = 'pasta';
 
-        // Container do título da pasta com toggle
+        // ---- Título da PASTA PRINCIPAL ----
         const tituloPasta = document.createElement('div');
         tituloPasta.className = 'titulo-pasta';
-        
+
         const iconSpan = document.createElement('span');
         iconSpan.className = 'toggle-icon';
-        iconSpan.textContent = '▼'; // Começa aberto
-        
+        iconSpan.textContent = '▶';   // começa FECHADO (ícone de fechado)
+
         const textSpan = document.createElement('span');
-        textSpan.innerHTML = '📁 ' + pasta;
-        
+        textSpan.innerHTML = `📁 ${pasta}`;
+
         tituloPasta.appendChild(iconSpan);
         tituloPasta.appendChild(textSpan);
-        
         divPasta.appendChild(tituloPasta);
 
-        // Container para o conteúdo da pasta (subpastas)
+        // Container que guarda subpastas (conteúdo da pasta principal)
         const pastaContent = document.createElement('div');
         pastaContent.className = 'pasta-content';
+        pastaContent.classList.add('hidden');  // começa fechado
 
         const conteudoPasta = dados.RELATORIOS[pasta];
 
-        for(const subpasta in conteudoPasta){
-
+        // ---- Subpastas ----
+        for (const subpasta in conteudoPasta) {
           const divSub = document.createElement('div');
           divSub.className = 'subpasta';
 
-          // Container do título da subpasta com toggle
+          // título da subpasta (com toggle)
           const tituloSub = document.createElement('div');
           tituloSub.className = 'titulo-subpasta';
-          
+
           const subIconSpan = document.createElement('span');
           subIconSpan.className = 'toggle-icon';
-          subIconSpan.textContent = '▼'; // Começa aberto
-          
+          subIconSpan.textContent = '▶';   // subpasta também começa fechada
+
           const subTextSpan = document.createElement('span');
-          subTextSpan.innerHTML = '📂 ' + subpasta;
-          
+          subTextSpan.innerHTML = `📂 ${subpasta}`;
+
           tituloSub.appendChild(subIconSpan);
           tituloSub.appendChild(subTextSpan);
-          
           divSub.appendChild(tituloSub);
 
-          // Container para os arquivos da subpasta
+          // container dos arquivos dentro da subpasta
           const subContent = document.createElement('div');
           subContent.className = 'subpasta-content';
+          subContent.classList.add('hidden'); // começa fechado
 
           const arquivos = conteudoPasta[subpasta];
-
-          arquivos.forEach(nomeArquivo => {
-
-            const divArquivo = document.createElement('div');
-            divArquivo.className = 'arquivo';
-
-            const caminho = `RELATORIOS/${pasta}/${subpasta}/${nomeArquivo}`;
-
-            divArquivo.innerHTML = `
-              <span class="icone">🌎</span>
-              <a href="${caminho}" target="_blank">
-                ${nomeArquivo.replace('.html','')}
-              </a>
-            `;
-
-            subContent.appendChild(divArquivo);
-
-          });
+          if (Array.isArray(arquivos)) {
+            arquivos.forEach(nomeArquivo => {
+              const divArquivo = document.createElement('div');
+              divArquivo.className = 'arquivo';
+              const caminho = `RELATORIOS/${pasta}/${subpasta}/${nomeArquivo}`;
+              divArquivo.innerHTML = `
+                <span class="icone">📄</span>
+                <a href="${caminho}" target="_blank">
+                  ${nomeArquivo.replace(/\.html$/i, '')}
+                </a>
+              `;
+              subContent.appendChild(divArquivo);
+            });
+          }
 
           divSub.appendChild(subContent);
           pastaContent.appendChild(divSub);
 
-          // Evento de toggle para a subpasta
-          tituloSub.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const content = this.nextElementSibling;
-            const icon = this.querySelector('.toggle-icon');
-            
-            if(content.classList.contains('hidden')) {
-              content.classList.remove('hidden');
-              icon.textContent = '▼';
-            } else {
-              content.classList.add('hidden');
-              icon.textContent = '▶';
-            }
-          });
-
+          // EVENTO DE CLIQUE PARA SUBPASTA (abrir/fechar arquivos)
+          tituloSub.addEventListener('click', (function(contentEl, iconEl) {
+            return function(e) {
+              e.stopPropagation();
+              if (contentEl.classList.contains('hidden')) {
+                contentEl.classList.remove('hidden');
+                iconEl.textContent = '▼';
+              } else {
+                contentEl.classList.add('hidden');
+                iconEl.textContent = '▶';
+              }
+            };
+          })(subContent, subIconSpan));
         }
 
         divPasta.appendChild(pastaContent);
         estrutura.appendChild(divPasta);
 
-        // Evento de toggle para a pasta principal
-        tituloPasta.addEventListener('click', function(e) {
-          e.stopPropagation();
-          const content = this.nextElementSibling;
-          const icon = this.querySelector('.toggle-icon');
-          
-          if(content.classList.contains('hidden')) {
-            content.classList.remove('hidden');
-            icon.textContent = '▼';
-          } else {
-            content.classList.add('hidden');
-            icon.textContent = '▶';
-          }
-        });
-
+        // EVENTO DE CLIQUE PARA PASTA PRINCIPAL (abrir/fechar todas subpastas dela)
+        tituloPasta.addEventListener('click', (function(contentContainer, mainIcon) {
+          return function(e) {
+            e.stopPropagation();
+            if (contentContainer.classList.contains('hidden')) {
+              contentContainer.classList.remove('hidden');
+              mainIcon.textContent = '▼';
+            } else {
+              contentContainer.classList.add('hidden');
+              mainIcon.textContent = '▶';
+            }
+          };
+        })(pastaContent, iconSpan));
       }
 
+      // ---- SISTEMA DE BUSCA (filtra os arquivos) ----
+      const buscaInput = document.getElementById('busca');
+      if (buscaInput) {
+        buscaInput.addEventListener('keyup', function () {
+          const texto = this.value.toLowerCase().trim();
+          const todosArquivos = document.querySelectorAll('.arquivo');
+
+          todosArquivos.forEach(arquivo => {
+            const nomeRelatorio = arquivo.innerText.toLowerCase();
+            if (nomeRelatorio.includes(texto)) {
+              arquivo.style.display = 'flex';
+            } else {
+              arquivo.style.display = 'none';
+            }
+          });
+
+          // Se o texto da busca não estiver vazio, abrimos todas as pastas automaticamente pra mostrar resultados
+          if (texto !== "") {
+            document.querySelectorAll('.pasta-content, .subpasta-content').forEach(c => {
+              c.classList.remove('hidden');
+            });
+            document.querySelectorAll('.toggle-icon').forEach(icone => {
+              icone.textContent = '▼';
+            });
+          } else {
+            // opcional: poderia manter o estado original, mas aqui deixamos as pastas como estavam
+            // (sem recarregar) - melhor não forçar fechamento para não perder navegação.
+            // Mas pra não atrapalhar, não reiniciamos tudo.
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao carregar os dados:", error);
+      document.getElementById('estrutura').innerHTML = '<div style="background:#ffefef; padding:20px; border-radius:24px;">⚠️ Erro ao carregar estrutura de relatórios. Verifique se o arquivo <strong>dados.json</strong> existe e está no mesmo diretório.</div>';
     }
+  }
 
-    carregarDados();
-
-    document.getElementById('busca').addEventListener('keyup', function(){
-
-      const texto = this.value.toLowerCase();
-
-      const arquivos = document.querySelectorAll('.arquivo');
-
-      arquivos.forEach(item => {
-
-        const nome = item.innerText.toLowerCase();
-
-        if(nome.includes(texto)){
-          item.style.display = 'flex';
-        }else{
-          item.style.display = 'none';
-        }
-
-      });
-
-    });
-
-  </script>
-
+  carregarDados();
+</script>
 </body>
 </html>
